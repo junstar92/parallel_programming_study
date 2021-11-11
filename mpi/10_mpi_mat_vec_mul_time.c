@@ -1,21 +1,32 @@
 /*****************************************************************************
- * File:        08_mpi_mat_vec_mul.c
+ * File:        10_mpi_mat_vec_mul_time.c
  * Purpose:     Implement parallel matrix-vector multiplication using
- *              one-dimensional arrays to store the vectors and the matrix.
+ *              one-dimensional arrays to store the vectors and the matrix and
+ *              estimate running time.
  *              Vectors use block distributions and the matrix is distributed
  *              by block rows.
- * Compile:     mpicc -Wall -o 08_mpi_mat_vec_mul 08_mpi_mat_vec_mul.c
- * Run:         mpiexec -n <number of proesses> ./08_mpi_mat_vec_mul
+ * Compile:     mpicc -Wall -o 10_mpi_mat_vec_mul_time 10_mpi_mat_vec_mul_time.c
+ * Run:         mpiexec -n <number of proesses> ./10_mpi_mat_vec_mul_time
  * 
  * Input:       Dimension of the matrix (m = number of rows,
  *                                       n = number of columns)
  *              m x n matrix A
  *              n-dimensional vector x
  * Output:      Vector y = Ax
+ *              Elapsed time
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <sys/time.h>
+
+/* The argument now should be a double (not a pointer to a double) */
+#define GET_TIME(now) \
+{ \
+    struct timeval tv; \
+    gettimeofday(&tv, NULL); \
+    now = tv.tv_sec + tv.tv_usec/1000000.0; \
+}
 
 const int RMAX = 10000000;
 
@@ -45,13 +56,20 @@ int main(void)
     Allocate_arrays(&local_A, &local_x, &local_y, local_m, n, local_n, comm);
 
     Get_matrix(local_A, m, local_m, n, "A", my_rank, comm);
-    Print_matrix(local_A, m, local_m, n, "A", my_rank, comm);
+    //Print_matrix(local_A, m, local_m, n, "A", my_rank, comm);
     Get_vector(local_x, n, local_n, "x", my_rank, comm);
-    Print_vector(local_x, n, local_n, "x", my_rank, comm);
+    //Print_vector(local_x, n, local_n, "x", my_rank, comm);
 
+    double local_start, local_finish, local_elapsed, elapsed;
+    local_start = MPI_Wtime();
     Mat_vec_mul(local_A, local_x, local_y, local_m, n, local_n, comm);
-
+    local_finish = MPI_Wtime();
+    local_elapsed = local_finish - local_start;
+    MPI_Reduce(&local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
     Print_vector(local_y, m, local_m, "y", my_rank, comm);
+
+    if (my_rank == 0)
+        printf("Elapsed time = %f seconds\n", elapsed);
 
     free(local_A);
     free(local_x);
@@ -205,6 +223,7 @@ void Get_matrix(
         Check_for_error(local_ok, "Get_matrix",
             "Can't allocate temporary matrix", comm);
 
+        srand(m);
         printf("Get the matrix %s from rand function\n", mat_name);
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; j++)
@@ -252,6 +271,7 @@ void Get_vector(
         Check_for_error(local_ok, "Get_vector",
             "Can't allocate temporary vector", comm);
 
+        srand(n);
         printf("Get the vector %s from rand function\n", vec_name);
         for (int i = 0; i < n; i++) {
             vec[i] = (rand() % RMAX) / (RMAX/10.0);
