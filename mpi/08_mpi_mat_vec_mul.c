@@ -51,7 +51,7 @@ int main(void)
 
     Mat_vec_mul(local_A, local_x, local_y, local_m, n, local_n, comm);
 
-    Print_vector(local_y, n, local_n, "y", my_rank, comm);
+    Print_vector(local_y, m, local_m, "y", my_rank, comm);
 
     free(local_A);
     free(local_x);
