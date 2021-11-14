@@ -183,7 +183,7 @@ void Allocate_arrays(
  *  - n:            global and local number of cols of matrix A
  *  - mat_name:     description of matrix (e.g., "A")
  *  - my_rank:      calling process' rank in comm
- *  - comm:         communicator containing processes calling Allocate_arrays
+ *  - comm:         communicator containing processes calling Get_matrix
  *****************************************************************************/
 void Get_matrix(
     double      local_mat[] /* out */,
