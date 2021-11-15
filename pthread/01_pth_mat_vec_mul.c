@@ -19,7 +19,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <time.h>
+#include <sys/time.h>
+
+#define GET_TIME(now) { \
+    struct timeval t; \
+    gettimeofday(&t, NULL); \
+    now = t.tv_sec + t.tv_usec/1000000.0; \
+}
 
 /* Global variables */
 const int RMAX = 1000000;
@@ -61,20 +67,20 @@ int main(int argc, char* argv[])
     Print_vector(x, n, "x");
 #endif
 
-    clock_t start = clock();
+    double start, finish;
 
+    GET_TIME(start);
     for (long thread = 0; thread < thread_count; thread++)
         pthread_create(&thread_handles[thread], NULL, Pth_mat_vec_mul, (void*)thread);
     
     for (long thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
-    
-    clock_t finish = clock();
+    GET_TIME(finish);
 
 #ifdef DEBUG
     Print_vector(y, m, "y");
 #endif
-    printf("Elasped time = %.6f seconds\n", (finish - start)/(double)CLOCKS_PER_SEC);
+    printf("Elasped time = %.6f seconds\n", finish - start);
 
     free(A);
     free(x);
