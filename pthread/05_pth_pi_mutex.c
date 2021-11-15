@@ -1,13 +1,13 @@
 /*****************************************************************************
- * File:        03_pth_pi_mutex.c
+ * File:        05_pth_pi_mutex.c
  * Purpose:     Estimate pi using serise
  * 
  *                  pi = 4*[1 - 1/3 + 1/5 - 1/7 + 1/9 - . . .]\
  * 
  *              This version uses a mutex to protect the critical section
  * 
- * Compile:     gcc -Wall -o 03_pth_pi_mutex 03_pth_pi_mutex.c -pthread [-lm]
- * Run:         ./03_pth_pi_mutex <number of threads> <n>
+ * Compile:     gcc -Wall -o 05_pth_pi_mutex 05_pth_pi_mutex.c -pthread [-lm]
+ * Run:         ./05_pth_pi_mutex <number of threads> <n>
  *              <n>:the number of terms of the Maclarin series. It should be
  *                  evenly divisible by the number of threads
  * 
@@ -113,6 +113,12 @@ void* Thread_sum(void* rank)
     return NULL;
 }
 
+/*****************************************************************************
+ * Function:        Get_args
+ * Purpose:         Get and check command list arguments
+ * In args:         argc, argv
+ * Globals out:     thread_count, n
+ *****************************************************************************/
 void Get_args(int argc, char* argv[])
 {
     int ok = 1;
@@ -136,6 +142,12 @@ void Get_args(int argc, char* argv[])
     }
 }
 
+/*****************************************************************************
+ * Function:        Serial_pi
+ * Purpose:         Estimate pi using 1 thread
+ * In args:         n
+ * Return:          Estimate of pi using n terms of Maclaurin series
+ *****************************************************************************/
 double Serial_pi(long long n)
 {
     double sum = 0.0;

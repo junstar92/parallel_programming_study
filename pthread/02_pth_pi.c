@@ -97,6 +97,12 @@ void* Thread_sum(void* rank)
     return NULL;
 }
 
+/*****************************************************************************
+ * Function:        Get_args
+ * Purpose:         Get and check command list arguments
+ * In args:         argc, argv
+ * Globals out:     thread_count, n
+ *****************************************************************************/
 void Get_args(int argc, char* argv[])
 {
     int ok = 1;
@@ -120,6 +126,12 @@ void Get_args(int argc, char* argv[])
     }
 }
 
+/*****************************************************************************
+ * Function:        Serial_pi
+ * Purpose:         Estimate pi using 1 thread
+ * In args:         n
+ * Return:          Estimate of pi using n terms of Maclaurin series
+ *****************************************************************************/
 double Serial_pi(long long n)
 {
     double sum = 0.0;
