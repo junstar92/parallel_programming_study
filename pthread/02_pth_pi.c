@@ -35,7 +35,6 @@ const int MAX_THREADS = 1024;
 long thread_count;
 long long n;
 double sum;
-pthread_mutex_t mutex;
 
 void *Thread_sum(void* rank);
 
@@ -49,12 +48,8 @@ int main(int argc, char* argv[])
     Get_args(argc, argv);
 
     thread_handles = (pthread_t*)malloc(thread_count * sizeof(pthread_t));
-    pthread_mutex_init(&mutex, NULL);
     sum = 0.0;
 
-    double start, finish;
-
-    GET_TIME(start);
     for (long thread = 0; thread < thread_count; thread++)
         pthread_create(&thread_handles[thread], NULL, Thread_sum, (void*)thread);
     
@@ -62,20 +57,14 @@ int main(int argc, char* argv[])
         pthread_join(thread_handles[thread], NULL);
 
     sum *= 4.0;
-    GET_TIME(finish);
 
     printf("With n = %lld terms,\n", n);
     printf("   Multi-threaded estimate of pi  = %.15f\n", sum);
-    printf("   Elapsed time = %f seconds\n\n", finish - start);
 
-    GET_TIME(start);
     sum = Serial_pi(n);
-    GET_TIME(finish);
     printf("   Single-threaded estimate of pi = %.15f\n", sum);
-    printf("   Elapsed time = %f seconds\n\n", finish - start);
     printf("   Math library estimate of pi    = %.15f\n", 4.0*atan(1.0));
 
-    pthread_mutex_destroy(&mutex);
     free(thread_handles);
 
     return 0;
@@ -95,7 +84,6 @@ void* Thread_sum(void* rank)
     long long my_n = n / thread_count;
     long long my_first_i = my_n * my_rank;
     long long my_last_i = my_first_i + my_n;
-    double my_sum = 0.0;
 
     double factor;
     if (my_first_i % 2 == 0)
@@ -104,11 +92,7 @@ void* Thread_sum(void* rank)
         factor = -1.0;
 
     for (long long i = my_first_i; i < my_last_i; i++, factor = -factor)
-        my_sum += factor/(2*i + 1);
-
-    pthread_mutex_lock(&mutex);
-    sum += my_sum;
-    pthread_mutex_unlock(&mutex);
+        sum += factor/(2*i + 1);
 
     return NULL;
 }
