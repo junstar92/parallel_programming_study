@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
  * Global in:       thread_count
  * Global in/out:   messages
  * Return:          ignored(NULL)
- * Node:            The my_msg buffer is freed in main function
+ * Note:            The my_msg buffer is freed in main function
  *****************************************************************************/
 void* Send_message(void* rank)
 {
