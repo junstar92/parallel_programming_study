@@ -30,7 +30,8 @@ int main(int argc, char* argv[])
     scanf("%lf %lf %d", &a, &b, &n);
     if (n % thread_count != 0)
         Usage(argv[0]);
-
+    double start, finish;
+    start = omp_get_wtime();
     double global_result = 0.0;
 #pragma omp parallel num_threads(thread_count)
     {
@@ -39,9 +40,11 @@ int main(int argc, char* argv[])
 #pragma omp critical
         global_result += my_result;
     }
+    finish = omp_get_wtime();
 
     printf("With n = %d trapezoids, our estimate\n", n);
     printf("of the integral from %f to %f = %f\n", a, b, global_result);
+    printf("Elapsed time = %f seconds\n", finish-start);
 
     return 0;
 }
