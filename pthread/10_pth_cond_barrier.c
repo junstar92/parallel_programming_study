@@ -9,7 +9,7 @@
  * Input:       none
  * Output:      Time for BARRIER_COUNT barriers
  * 
- * Node:        Verbose output can be enabled with the compile flag -DDEBUG
+ * Note:        Verbose output can be enabled with the compile flag -DDEBUG
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
