@@ -3,7 +3,7 @@
  * Purpose:     Compute a sum in which each term is the value of a function
  *              applied to a non-negative integer i and evaluation of the
  *              function requires work propotional to i.
- * Compile:     gcc -Wall -fopenmp -o 10_omp_sin_sum 10_omp_sin_sum.c [-lm] [-DDEBUG]
+ * Compile:     gcc -Wall -fopenmp -o 10_omp_sin_sum 10_omp_sin_sum.c -lm [-DDEBUG]
  * Run:         ./10_omp_sin_sum <number of threads> <number of terms>
  * 
  * Input:       none
@@ -116,7 +116,7 @@ double Sum(long n, int thread_count)
     double approx = 0.0;
 
 #pragma omp parallel for num_threads(thread_count) \
-    reduction(+: approx) schedule(runtime)
+    reduction(+: approx) schedule(auto)
     for (int i = 0; i <= n; i++) {
         approx += f(i);
 #ifdef DEBUG
