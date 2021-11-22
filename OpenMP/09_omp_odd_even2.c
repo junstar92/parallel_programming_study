@@ -144,13 +144,13 @@ void Print_list(int a[], int n, char* title)
  *****************************************************************************/
 void Odd_even(int a[], int n)
 {
-    int phase, i, tmp;
+    int phase, tmp;
 #pragma omp parallel num_threads(thread_count) \
-    default(none) shared(a, n) private(i, tmp, phase)
+    default(none) shared(a, n) private(tmp, phase)
     for (phase = 0; phase < n; phase++) {
         if (phase % 2 == 0) {
 #pragma omp for
-            for (i = 1; i < n; i += 2) {
+            for (int i = 1; i < n; i += 2) {
                 if (a[i-1] > a[i]) {
                     tmp = a[i-1];
                     a[i-1] = a[i];
@@ -160,7 +160,7 @@ void Odd_even(int a[], int n)
         }
         else {
 #pragma omp for
-            for (i = 1; i < n-1; i += 2) {
+            for (int i = 1; i < n-1; i += 2) {
                 if (a[i] > a[i+1]) {
                     tmp = a[i+1];
                     a[i+1] = a[i];
