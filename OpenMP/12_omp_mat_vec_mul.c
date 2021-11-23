@@ -159,13 +159,12 @@ void Print_vector(double vec[], int n, char* title)
 void Omp_mat_vec_mul(double A[], double x[], double y[], int m, int n, int thread_count)
 {
     double start, finish, temp;
-    int i, j;
     start = omp_get_wtime();
 #pragma omp parallel for num_threads(thread_count) \
-    default(none) private(i, j, temp) shared(A, x, y, m, n)
-    for (i = 0; i < m; i++) {
+    default(none) private(temp) shared(A, x, y, m, n)
+    for (int i = 0; i < m; i++) {
         y[i] = 0.0;
-        for (j = 0; j < n; j++) {
+        for (int j = 0; j < n; j++) {
             //y[i] += A[i*n + j] * x[j];
             temp = A[i*n + j] * x[j];
             y[i] += temp;
