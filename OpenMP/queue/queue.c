@@ -136,6 +136,10 @@ void Free_queue(Queue* q)
     }
     q->enqueued = q->dequeued = 0;
     q->front_p = q->tail_p = NULL;
+
+#ifdef USE_OMP_LOCK
+    omp_destroy_lock(&q->lock);
+#endif
 }
 
 /*****************************************************************************
