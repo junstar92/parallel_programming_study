@@ -37,6 +37,8 @@ int main(int argc, char* argv[])
 
     Queue** msg_queues = (Queue**)malloc(thread_count * sizeof(Queue*));
     int done_sending = 0;
+    double start, finish;
+    start = omp_get_wtime();
 #pragma omp parallel num_threads(thread_count) \
     default(none) shared(thread_count, send_max, msg_queues, done_sending)
     {
@@ -64,7 +66,8 @@ int main(int argc, char* argv[])
         Free_queue(msg_queues[my_rank]);
         free(msg_queues[my_rank]);
     } /* omp parallel */
-
+    finish = omp_get_wtime();
+    printf("Elapsed time : %.6f seconds\n", finish-start);
     free(msg_queues);
     return 0;
 }
@@ -129,8 +132,9 @@ void Try_receive(Queue* q, int my_rank)
     }
     else
         Dequeue(q, &src, &msg);
-    
+#ifdef DEBUG
     printf("Thread %d > received %d from %d\n", my_rank, msg, src);
+#endif
 }
 
 /*****************************************************************************
