@@ -91,8 +91,15 @@ void Send_msg(Queue* msg_queues[], int my_rank, int thread_count, int msg_number
 {
     int msg = rand() % MAX_MSG;
     int dest = rand() % thread_count;
+#ifndef USE_OMP_LOCK
 #pragma omp critical
     Enqueue(msg_queues[dest], my_rank, msg);
+#else
+    Queue* msg_queue = msg_queues[dest];
+    omp_set_lock(&msg_queue->lock);
+    Enqueue(msg_queue, my_rank, msg);
+    omp_unset_lock(&msg_queue->lock);
+#endif
 #ifdef DEBUG
     printf("Thread %d > sent %d to %d\n", my_rank, msg, dest);
 #endif
@@ -110,9 +117,16 @@ void Try_receive(Queue* q, int my_rank)
 
     if (q_size == 0)
         return;
-    else if (q_size == 1)
+    else if (q_size == 1) {
+#ifndef USE_OMP_LOCK
 #pragma omp critical
         Dequeue(q, &src, &msg);
+#else
+        omp_set_lock(&q->lock);
+        Dequeue(q, &src, &msg);
+        omp_unset_lock(&q->lock);
+#endif
+    }
     else
         Dequeue(q, &src, &msg);
     
