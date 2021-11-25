@@ -1,14 +1,19 @@
 /*****************************************************************************
  * File:        13_pth_mat_mul.c
- * Purpose:     Compute a parallel matrix-vector product. Matrix is distributed 
- *              by block rows. Vectors are distributed by block.
+ * Purpose:     Compute a parallel matrix-matrix product. Matrix is distributed 
+ *              by block rows.
  * Compile:     gcc -Wall -o 13_pth_mat_mul 13_pth_mat_mul.c -pthread [-DDEBUG]
  * Run:         ./13_pth_mat_mul <thread_count> <m> <n> <k> <sol>
+ *                  <m> : the rows of matrix A
+ *                  <n> : the columns of matrix A and the rows of matrix B
+ *                  <k> : the columns of matrix B
  *                <sol> : number of solution
+ *                  - 1 : Matrix A multiply by matrix B
+ *                  - 2 : Matrix A multiply by transpose of matrix B
  * 
  * Input:       A, B
  * Output:      
- *              C: the product vector, C = AB
+ *              C: the product matrix, C = AB
  *              Elapsed time each multiplication and average elapsed time of
  *              100 multiplications
  *****************************************************************************/
