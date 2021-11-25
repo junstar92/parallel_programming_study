@@ -9,7 +9,8 @@
  * Input:       A, B
  * Output:      
  *              C: the product vector, C = AB
- *              Elapsed time for the computation
+ *              Elapsed time each multiplication and average elapsed time of
+ *              100 multiplications
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +24,7 @@
 }
 
 const int RMAX = 1000000;
+const int NCOUNT = 100; // number of multiplication
 int thread_count, m, n, k, sol;
 double *A, *B, *C, *BT;
 
@@ -63,21 +65,27 @@ int main(int argc, char* argv[])
         break;
     }
     
-    double start, finish;
-    GET_TIME(start);
-    if (sol == 2) {
-        Transpose_matrix(B, BT, n, k);
+    double start, finish, avg_elapsed = 0.0;
+    for (int count = 0; count < NCOUNT; count++) {
+        GET_TIME(start);
+        if (sol == 2) {
+            Transpose_matrix(B, BT, n, k);
+        }
+        for (long thread = 0; thread < thread_count; thread++)
+            pthread_create(&thread_handles[thread], NULL, sol_function, (void*)thread);
+        for (long thread = 0; thread < thread_count; thread++)
+            pthread_join(thread_handles[thread], NULL);
+        GET_TIME(finish);
+
+        printf("[%3d] Elapsed time = %.6f seconds\n", count+1, finish-start);
+        avg_elapsed += (finish - start) / NCOUNT;
     }
-    for (long thread = 0; thread < thread_count; thread++)
-        pthread_create(&thread_handles[thread], NULL, sol_function, (void*)thread);
-    for (long thread = 0; thread < thread_count; thread++)
-        pthread_join(thread_handles[thread], NULL);
-    GET_TIME(finish);
 
 #ifdef DEBUG
     Print_matrix(C, m, k, "The product is");
 #endif
-    printf("Elapsed time = %.6f seconds\n", finish-start);
+    
+    printf("Average elapsed time = %.6f seconds\n", avg_elapsed);
 
     free(A);
     free(B);

@@ -7,18 +7,21 @@
  *              [-DDEBUG]
  * Run:         ./14_omp_mat_mul <number of threads> <m> <n> <k> <sol>
  *                <sol> : number of solution
+ *                  - 1 : Matrix A multiply by matrix B
+ *                  - 2 : Matrix A multiply by transpose of matrix B
  * 
  * Input:       A, B
  * Output:      
  *              C: the product vector, C = AB
- *              Elapsed time for the computation
+ *              Elapsed time each multiplication and average elapsed time of
+ *              100 multiplications
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
 
 const int RMAX = 1000000;
-//const int NCOUNT = 100; // number of multiplication
+const int NCOUNT = 100; // number of multiplication
 
 void Get_args(int argc, char* argv[], int* thread_count, int* m, int* n, int* k, int* sol);
 void Usage(char* prog_name);
@@ -153,22 +156,26 @@ void Print_matrix(double mat[], int m, int n, char* title)
  *****************************************************************************/
 void Omp_mat_mul1(double A[], double B[], double C[], int m, int n, int k, int thread_count)
 {
-    double start, finish, temp;
-    start = omp_get_wtime();
+    double start, finish, temp, avg_elapsed = 0.0;
+    for (int count = 0; count < NCOUNT; count++) {
+        start = omp_get_wtime();
 #pragma omp parallel for num_threads(thread_count) \
     default(none) private(temp) shared(A, B, C, m, n, k)
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < k; j++) {
-            temp = 0.0;
-            for (int l = 0; l < n; l++) {
-                temp += A[i*n + l] * B[l*k + j];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < k; j++) {
+                temp = 0.0;
+                for (int l = 0; l < n; l++) {
+                    temp += A[i*n + l] * B[l*k + j];
+                }
+                C[i*k + j] = temp;
             }
-            C[i*k + j] = temp;
         }
+        finish = omp_get_wtime();
+        printf("[%3d] Elapsed time = %f seconds\n", count+1, finish - start);
+        avg_elapsed += (finish-start) / NCOUNT;
     }
-    finish = omp_get_wtime();
 
-    printf("Elapsed time = %f seconds\n", finish - start);
+    printf("Average elapsed time : %.6f seconds\n", avg_elapsed);
 }
 
 /*****************************************************************************
@@ -180,21 +187,25 @@ void Omp_mat_mul1(double A[], double B[], double C[], int m, int n, int k, int t
  *****************************************************************************/
 void Omp_mat_mul2(double A[], double B[], double C[], double BT[], int m, int n, int k, int thread_count)
 {
-    double start, finish, temp;
-    start = omp_get_wtime();
-    Transpose_matrix(B, BT, n, k, thread_count);
+    double start, finish, temp, avg_elapsed = 0.0;
+    for (int count = 0; count < NCOUNT; count++) {
+        start = omp_get_wtime();
+        Transpose_matrix(B, BT, n, k, thread_count);
 #pragma omp parallel for num_threads(thread_count) \
     default(none) private(temp) shared(A, BT, C, m, n, k)
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < k; j++) {
-            temp = 0.0;
-            for (int l = 0; l < n; l++) {
-                temp += A[i*n + l] * BT[j*n + l];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < k; j++) {
+                temp = 0.0;
+                for (int l = 0; l < n; l++) {
+                    temp += A[i*n + l] * BT[j*n + l];
+                }
+                C[i*k + j] = temp;
             }
-            C[i*k + j] = temp;
         }
+        finish = omp_get_wtime();
+        printf("[%3d] Elapsed time = %f seconds\n", count+1, finish - start);
+        avg_elapsed += (finish-start) / NCOUNT;
     }
-    finish = omp_get_wtime();
 
-    printf("Elapsed time = %f seconds\n", finish - start);
+    printf("Average elapsed time : %.6f seconds\n", avg_elapsed);
 }
