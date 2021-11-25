@@ -67,10 +67,6 @@ int main(int argc, char* argv[])
     CUDA_CHECK(cudaMalloc((void**)&d_B, n * k * sizeof(double)));
     CUDA_CHECK(cudaMalloc((void**)&d_C, m * k * sizeof(double)));
 
-    // Copy the host matrixs A and B in host memory to the device matrixs in device memory
-    CUDA_CHECK(cudaMemcpy(d_A, A, m * n * sizeof(double), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_B, B, n * k * sizeof(double), cudaMemcpyHostToDevice));
-
     dim3 dimGrid(ceil(n / 16.0), ceil(m / 16.0));
     dim3 dimBlock(16, 16); // 256 threads
 
@@ -78,6 +74,10 @@ int main(int argc, char* argv[])
     // Launch the Matrix Multiplication CUDA Kernel
     for (int count = 0; count < NCOUNT; count++) {
         GET_TIME(start);
+        // Copy the host matrixs A and B in host memory to the device matrixs in device memory
+        CUDA_CHECK(cudaMemcpy(d_A, A, m * n * sizeof(double), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(d_B, B, n * k * sizeof(double), cudaMemcpyHostToDevice));
+
         cuda_mat_mul<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, m, n, k);
         CUDA_CHECK(cudaGetLastError());
         // Copy the device result matrix in device memory to the host result matrix in host memory

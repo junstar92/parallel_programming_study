@@ -53,12 +53,12 @@ int main(int argc, char* argv[])
     Print_matrix(B, m, n, "B");
 #endif
 
-    cv::Mat cvA(m, n, CV_64FC1, A);
-    cv::Mat cvB(n, k, CV_64FC1, B);
 
     double start, finish, avg_elapsed = 0.0;
     for (int count = 0; count < NCOUNT; count++) {
         GET_TIME(start);
+        cv::Mat cvA(m, n, CV_64FC1, A);
+        cv::Mat cvB(n, k, CV_64FC1, B);
         cv::Mat cvC = cvA * cvB;
         //cv::gemm(cvA, cvB, 1.0, NULL, 0, cvC);
         //C = reinterpret_cast<double*>(cvC.data);
