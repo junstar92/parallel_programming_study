@@ -121,7 +121,7 @@ void Get_args(int argc, char* argv[])
     n = strtol(argv[3], NULL, 10);
     k = strtol(argv[4], NULL, 10);
     sol = strtol(argv[5], NULL, 10);
-    if (thread_count <= 0 || m <= 0 || n <= 0 || k <= 0)
+    if (thread_count <= 0 || m <= 0 || n <= 0 || k <= 0 || (sol != 1 && sol != 2))
         Usage(argv[0]);
 }
 
