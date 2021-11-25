@@ -23,7 +23,11 @@
 #include <omp.h>
 
 const int RMAX = 1000000;
+#ifdef DEBUG
+const int NCOUNT = 1; // number of multiplication
+#else
 const int NCOUNT = 100; // number of multiplication
+#endif
 
 void Get_args(int argc, char* argv[], int* thread_count, int* m, int* n, int* k, int* sol);
 void Usage(char* prog_name);

@@ -1,7 +1,7 @@
 /*****************************************************************************
- * File:        ocv_mat_mul.c
- * Purpose:     Compute a matrix-matrix product by using OpenCV library.
- * Compile:     g++ -Wall -o ocv_mat_mul ocv_mat_mul.c $(pkg-config opencv4 --libs --cflags)
+ * File:        cuda_mat_mul.cu
+ * Purpose:     Compute a matrix-matrix product by using CUDA library.
+ * Compile:     nvcc -Wall -o cuda_mat_mul cuda_mat_mul.cu $(pkg-config cuda-XX.X --libs --cflags)
  * Run:         ./ocv_mat_mul <m> <n> <k>
  *                  <m> : the rows of matrix A
  *                  <n> : the columns of matrix A and the rows of matrix B
@@ -15,13 +15,20 @@
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <opencv2/highgui.hpp>
 #include <sys/time.h>
+#include <cuda_runtime.h>
 
 #define GET_TIME(now) { \
     struct timeval t; \
     gettimeofday(&t, NULL); \
     now = t.tv_sec + t.tv_usec/1000000.0; \
+}
+
+#define CUDA_CHECK(val) { \
+	if (val != cudaSuccess) { \
+		fprintf(stderr, "Error %s at line %d in file %s\n", cudaGetErrorString(val), __LINE__, __FILE__); \
+		exit(1); \
+	} \
 }
 
 const int RMAX = 1000000;
@@ -35,6 +42,7 @@ void Get_args(int argc, char* argv[], int* m, int* n, int* k);
 void Usage(char* prog_name);
 void Generate_matrix(double mat[], int m, int n);
 void Print_matrix(double mat[], int m, int n, char* title);
+__global__ void cuda_mat_mul(double *A, double *B, double *C, int m, int n, int k);
 
 int main(int argc, char* argv[])
 {
@@ -50,30 +58,46 @@ int main(int argc, char* argv[])
     Generate_matrix(B, n, k);
 #ifdef DEBUG
     Print_matrix(A, m, n, "A");
-    Print_matrix(B, m, n, "B");
+    Print_matrix(B, n, k, "B");
 #endif
 
-    cv::Mat cvA(m, n, CV_64FC1, A);
-    cv::Mat cvB(n, k, CV_64FC1, B);
+    // Allocate the device input matrixs for A, B, C;
+    double* d_A, *d_B, *d_C;
+    CUDA_CHECK(cudaMalloc((void**)&d_A, m * n * sizeof(double)));
+    CUDA_CHECK(cudaMalloc((void**)&d_B, n * k * sizeof(double)));
+    CUDA_CHECK(cudaMalloc((void**)&d_C, m * k * sizeof(double)));
+
+    // Copy the host matrixs A and B in host memory to the device matrixs in device memory
+    CUDA_CHECK(cudaMemcpy(d_A, A, m * n * sizeof(double), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_B, B, n * k * sizeof(double), cudaMemcpyHostToDevice));
+
+    dim3 dimGrid(ceil(n / 16.0), ceil(m / 16.0));
+    dim3 dimBlock(16, 16); // 256 threads
 
     double start, finish, avg_elapsed = 0.0;
+    // Launch the Matrix Multiplication CUDA Kernel
     for (int count = 0; count < NCOUNT; count++) {
         GET_TIME(start);
-        cv::Mat cvC = cvA * cvB;
-        //cv::gemm(cvA, cvB, 1.0, NULL, 0, cvC);
-        //C = reinterpret_cast<double*>(cvC.data);
+        cuda_mat_mul<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, m, n, k);
+        CUDA_CHECK(cudaGetLastError());
+        // Copy the device result matrix in device memory to the host result matrix in host memory
+        CUDA_CHECK(cudaMemcpy(C, d_C, m * k * sizeof(double), cudaMemcpyDeviceToHost));
         GET_TIME(finish);
 
         printf("[%3d] Elapsed time = %.6f seconds\n", count+1, finish-start);
         avg_elapsed += (finish - start) / NCOUNT;
-        //Print_matrix(C, m, k, "The product is");
     }
-    
+
 #ifdef DEBUG
     Print_matrix(C, m, k, "The product is");
 #endif
 
     printf("Average elapsed time = %.6f seconds\n", avg_elapsed);
+
+    // Free device global memory
+    CUDA_CHECK(cudaFree(d_A));
+    CUDA_CHECK(cudaFree(d_B));
+    CUDA_CHECK(cudaFree(d_C));
 
     free(A);
     free(B);
@@ -138,4 +162,20 @@ void Print_matrix(double mat[], int m, int n, char* title)
             printf("%f ", mat[i*n + j]);
         printf("\n");
     }
+}
+
+__global__ void cuda_mat_mul(double *A, double *B, double *C, int m, int n, int k)
+{
+    int ROW = blockIdx.x * blockDim.x + threadIdx.x;
+    int COL = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (ROW < m && COL < k) {
+        double value = 0.0;
+        for (int i = 0; i < k; i++) {
+            value += A[ROW * n + i] * B[i * k + COL];
+        }
+        C[ROW * k + COL] = value;
+    }
+
+    __syncthreads();
 }

@@ -29,7 +29,11 @@
 }
 
 const int RMAX = 1000000;
+#ifdef DEBUG
+const int NCOUNT = 1; // number of multiplication
+#else
 const int NCOUNT = 100; // number of multiplication
+#endif
 int thread_count, m, n, k, sol;
 double *A, *B, *C, *BT;
 
