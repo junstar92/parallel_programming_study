@@ -66,11 +66,12 @@ int main(int argc, char* argv[])
 
         printf("[%3d] Elapsed time = %.6f seconds\n", count+1, finish-start);
         avg_elapsed += (finish - start) / NCOUNT;
-        //Print_matrix(C, m, k, "The product is");
     }
     
 #ifdef DEBUG
-    Print_matrix(C, m, k, "The product is");
+    printf("The product is\n");
+    cv::print(C);
+    printf("\n\n");
 #endif
 
     printf("Average elapsed time = %.6f seconds\n", avg_elapsed);
