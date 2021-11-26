@@ -1,8 +1,8 @@
 /*****************************************************************************
  * File:        cuda_mat_mul.cu
  * Purpose:     Compute a matrix-matrix product by using CUDA library.
- * Compile:     nvcc -o cuda_mat_mul cuda_mat_mul.cu $(pkg-config cuda-XX.X --libs --cflags)
- * Run:         ./ocv_mat_mul <m> <n> <k>
+ * Compile:     nvcc -o cuda_mat_mul cuda_mat_mul.cu -lcuda
+ * Run:         ./cuda_mat_mul <m> <n> <k>
  *                  <m> : the rows of matrix A
  *                  <n> : the columns of matrix A and the rows of matrix B
  *                  <k> : the columns of matrix B

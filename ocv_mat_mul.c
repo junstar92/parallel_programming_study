@@ -44,22 +44,23 @@ int main(int argc, char* argv[])
     double *A, *B, *C;
     A = (double*)malloc(m * n * sizeof(double));
     B = (double*)malloc(n * k * sizeof(double));
-    C = (double*)malloc(m * k * sizeof(double));
+    //C = (double*)malloc(m * k * sizeof(double));
 
     Generate_matrix(A, m, n);
     Generate_matrix(B, n, k);
 #ifdef DEBUG
     Print_matrix(A, m, n, "A");
-    Print_matrix(B, m, n, "B");
+    Print_matrix(B, n, k, "B");
 #endif
 
 
     double start, finish, avg_elapsed = 0.0;
+    cv::Mat cvC;
     for (int count = 0; count < NCOUNT; count++) {
         GET_TIME(start);
         cv::Mat cvA(m, n, CV_64FC1, A);
         cv::Mat cvB(n, k, CV_64FC1, B);
-        cv::Mat cvC = cvA * cvB;
+        cvC = cvA * cvB;
         //cv::gemm(cvA, cvB, 1.0, NULL, 0, cvC);
         //C = reinterpret_cast<double*>(cvC.data);
         GET_TIME(finish);
@@ -70,7 +71,7 @@ int main(int argc, char* argv[])
     
 #ifdef DEBUG
     printf("The product is\n");
-    cv::print(C);
+    cv::print(cvC);
     printf("\n\n");
 #endif
 
@@ -78,7 +79,7 @@ int main(int argc, char* argv[])
 
     free(A);
     free(B);
-    free(C);
+    //free(C);
 
     return 0;
 }
