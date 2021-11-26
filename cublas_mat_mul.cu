@@ -42,7 +42,6 @@ void Get_args(int argc, char* argv[], int* m, int* n, int* k);
 void Usage(char* prog_name);
 void Generate_matrix(double mat[], int m, int n);
 void Print_matrix(double mat[], int m, int n, char* title);
-__global__ void cuda_mat_mul(double *A, double *B, double *C, int m, int n, int k);
 
 int main(int argc, char* argv[])
 {
@@ -160,20 +159,4 @@ void Print_matrix(double mat[], int m, int n, char* title)
             printf("%f ", mat[i*n + j]);
         printf("\n");
     }
-}
-
-__global__ void cuda_mat_mul(double *A, double *B, double *C, int m, int n, int k)
-{
-    int ROW = blockIdx.x * blockDim.x + threadIdx.x;
-    int COL = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (ROW < m && COL < k) {
-        double value = 0.0;
-        for (int i = 0; i < k; i++) {
-            value += A[ROW * n + i] * B[i * k + COL];
-        }
-        C[ROW * k + COL] = value;
-    }
-
-    __syncthreads();
 }
