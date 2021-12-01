@@ -14,8 +14,8 @@
 #include <common/common.h>
 
 void Usage(char prog_name[]);
-void vectorAdd(const float *h_A, const float *h_B, float *h_C, int numElements);
-__global__ void vectorAddKernel(const float *A, const float *B, float *C, int numElements);
+void vecAdd(const float *h_A, const float *h_B, float *h_C, int numElements);
+__global__ void vecAddKernel(const float *A, const float *B, float *C, int numElements);
 
 int main(int argc, char* argv[])
 {
@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
     common_init_rand_fvec(h_A, numElements);
     common_init_rand_fvec(h_B, numElements);
 
-    // call vectorAdd function
-    vectorAdd(h_A, h_B, h_C, numElements);
+    // call vecAdd function
+    vecAdd(h_A, h_B, h_C, numElements);
 
     // Free host memory
     free(h_A);
@@ -60,7 +60,7 @@ void Usage(char prog_name[])
     exit(EXIT_FAILURE);
 }
 
-void vectorAdd(const float *h_A, const float *h_B, float *h_C, int numElements)
+void vecAdd(const float *h_A, const float *h_B, float *h_C, int numElements)
 {
     // Allocate the device input vectors A, B, C
     float *d_A, *d_B, *d_C;
@@ -86,7 +86,7 @@ void vectorAdd(const float *h_A, const float *h_B, float *h_C, int numElements)
 
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaEventRecord(start));
-    vectorAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
+    vecAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaEventRecord(stop));
 
@@ -112,11 +112,11 @@ void vectorAdd(const float *h_A, const float *h_B, float *h_C, int numElements)
     // Compute and Print the performance
     float msecTotal = 0.0f;
     CUDA_CHECK(cudaEventElapsedTime(&msecTotal, start, stop));
-    double flopsPerVectorAdd = static_cast<double>(numElements);
-    double gigaFlops = (flopsPerVectorAdd * 1.0e-9f) / (msecTotal / 1000.0f);
+    double flopsPerVecAdd = static_cast<double>(numElements);
+    double gigaFlops = (flopsPerVecAdd * 1.0e-9f) / (msecTotal / 1000.0f);
     printf("Performance= %.2f GFlop/s, Time= %.3f msec, Size = %.0f Ops, "
            "WorkgroupSize= %u threads/block\n",
-           gigaFlops, msecTotal, flopsPerVectorAdd, threadsPerBlock);
+           gigaFlops, msecTotal, flopsPerVecAdd, threadsPerBlock);
     
     // Free device global memory
     CUDA_CHECK(cudaFree(d_A));
@@ -127,7 +127,7 @@ void vectorAdd(const float *h_A, const float *h_B, float *h_C, int numElements)
 }
 
 __global__
-void vectorAddKernel(const float *A, const float *B, float *C, int numElements)
+void vecAddKernel(const float *A, const float *B, float *C, int numElements)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
