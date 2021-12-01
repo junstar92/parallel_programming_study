@@ -17,9 +17,10 @@
 	} \
 }
 
-void common_init_rand_fvec(float *vec, int n)
+template<typename T>
+inline void common_init_rand_fvec(T *vec, int n)
 {
     for (int i = 0; i < n; i++) {
-        vec[i] = rand() / (float)RAND_MAX;
+        vec[i] = rand() / (T)RAND_MAX;
     }
 }
