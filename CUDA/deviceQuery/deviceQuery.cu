@@ -3,7 +3,7 @@
  * Description: Query device information
  *              
  * Compile:     nvcc -o deviceQuery deviceQuery.cu -I.. -lcuda
- * Run:         ./deviceQuery <image file path>
+ * Run:         ./deviceQuery
  *****************************************************************************/
 #include <stdio.h>
 #include <cuda_runtime.h>
