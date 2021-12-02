@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
     }
 
     // Initialize that host input vectors
-    common_init_rand_fvec(h_A, numElements);
-    common_init_rand_fvec(h_B, numElements);
+    common_random_init_vector(h_A, numElements);
+    common_random_init_vector(h_B, numElements);
 
     // call vecAdd function
     vecAdd(h_A, h_B, h_C, numElements);
