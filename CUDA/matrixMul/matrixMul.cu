@@ -121,14 +121,14 @@ void Usage(char prog_name[])
 __global__
 void matrixMul(const float *A, const float *B, float *C, const int M, const int K, const int N)
 {
-    int ROW = blockIdx.x * blockDim.x + threadIdx.x;
-    int COL = blockIdx.y * blockDim.y + threadIdx.y;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (ROW < M && COL < N) {
+    if (Row < M && Col < N) {
         float value = 0.0;
         for (int i = 0; i < K; i++) {
-            value += A[(ROW * K) + i] * B[(N * i) + COL];
+            value += A[(Row * K) + i] * B[(N * i) + Col];
         }
-        C[(ROW * N) + COL] = value;
+        C[(Row * N) + Col] = value;
     }
 }

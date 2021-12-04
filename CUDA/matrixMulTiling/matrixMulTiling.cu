@@ -129,17 +129,17 @@ void matrixMul(const float *A, const float *B, float *C, const int M, const int 
     int bx = blockIdx.x, by = blockIdx.y;
     int tx = threadIdx.x, ty = threadIdx.y;
 
-    int ROW = by * TILE_WIDTH + ty;
-    int COL = bx * TILE_WIDTH + tx;
+    int Row = by * TILE_WIDTH + ty;
+    int Col = bx * TILE_WIDTH + tx;
 
     float Pvalue = 0;
     for (int h = 0; h < ceil(K / (float)TILE_WIDTH); ++h) {
-        if ((ROW < M) && (h*TILE_WIDTH + tx < K))
-            Asub[ty][tx] = A[ROW*K + h*TILE_WIDTH + tx];
+        if ((Row < M) && (h*TILE_WIDTH + tx < K))
+            Asub[ty][tx] = A[Row*K + h*TILE_WIDTH + tx];
         else
             Asub[ty][tx] = 0;
-        if ((COL < N) && (h*TILE_WIDTH + ty < K))
-            Bsub[ty][tx] = B[(h*TILE_WIDTH + ty)*K + COL];
+        if ((Col < N) && (h*TILE_WIDTH + ty < K))
+            Bsub[ty][tx] = B[(h*TILE_WIDTH + ty)*K + Col];
         else
             Bsub[ty][tx] = 0;
 
@@ -152,6 +152,6 @@ void matrixMul(const float *A, const float *B, float *C, const int M, const int 
         __syncthreads();
     }
 
-    if ((ROW < M) && (COL < N))
-        C[ROW*K + COL] = Pvalue;
+    if ((Row < M) && (Col < N))
+        C[Row*K + Col] = Pvalue;
 }
