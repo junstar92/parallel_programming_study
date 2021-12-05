@@ -133,13 +133,13 @@ void matrixMulTiled(const float *A, const float *B, float *C, const int M, const
     int Col = bx * TILE_WIDTH + tx;
 
     float Pvalue = 0;
-    for (int h = 0; h < ceil(K / (float)TILE_WIDTH); ++h) {
-        if ((Row < M) && (h*TILE_WIDTH + tx < K))
-            Asub[ty][tx] = A[Row*K + h*TILE_WIDTH + tx];
+    for (int ph = 0; ph < ceil(K / (float)TILE_WIDTH); ++ph) {
+        if ((Row < M) && (ph*TILE_WIDTH + tx < K))
+            Asub[ty][tx] = A[Row*K + ph*TILE_WIDTH + tx];
         else
             Asub[ty][tx] = 0;
-        if ((Col < N) && (h*TILE_WIDTH + ty < K))
-            Bsub[ty][tx] = B[(h*TILE_WIDTH + ty)*K + Col];
+        if ((Col < N) && (ph*TILE_WIDTH + ty < K))
+            Bsub[ty][tx] = B[(ph*TILE_WIDTH + ty)*K + Col];
         else
             Bsub[ty][tx] = 0;
 
