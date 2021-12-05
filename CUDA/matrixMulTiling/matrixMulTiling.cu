@@ -17,7 +17,7 @@
 #include <cuda_runtime.h>
 #include <common/common.h>
 
-#define TILE_WIDTH 32
+#define TILE_WIDTH 16
 
 void Usage(char prog_name[]);
 __global__ void matrixMulTiled(const float *A, const float *B, float *C, const int M, const int K, const int N);
