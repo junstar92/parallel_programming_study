@@ -20,7 +20,7 @@
 #define TILE_WIDTH 32
 
 void Usage(char prog_name[]);
-__global__ void matrixMul(const float *A, const float *B, float *C, const int M, const int K, const int N);
+__global__ void matrixMulTiled(const float *A, const float *B, float *C, const int M, const int K, const int N);
 
 int main(int argc, char* argv[])
 {
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaEventRecord(start));
 
-    matrixMul<<<grid, threads>>>(d_A, d_B, d_C, m, k, n);
+    matrixMulTiled<<<grid, threads>>>(d_A, d_B, d_C, m, k, n);
 
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaEventRecord(stop));
@@ -121,7 +121,7 @@ void Usage(char prog_name[])
 }
 
 __global__
-void matrixMul(const float *A, const float *B, float *C, const int M, const int K, const int N)
+void matrixMulTiled(const float *A, const float *B, float *C, const int M, const int K, const int N)
 {
     __shared__ float Asub[TILE_WIDTH][TILE_WIDTH];
     __shared__ float Bsub[TILE_WIDTH][TILE_WIDTH];
