@@ -1,3 +1,6 @@
+#ifndef __COMMON_H__
+#define __COMMON_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -173,3 +176,5 @@ int common_verify_matMul_l2ne(T *A, T *B, T *C, int M, int K, int N)
 
     return 0;
 }
+
+#endif
