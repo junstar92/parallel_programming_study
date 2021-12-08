@@ -1,6 +1,11 @@
 /*****************************************************************************
  * File:        reduction.cpp
- * Description: 
+ * Description: Implement Sum Reduction with some reduction kernels (1 ~ 3)
+ *      [1]: simple sum reduction with highly divergent warps
+ *      [2]: revised version from Kernel[1], there is a bank conflicts of shared memory
+ *      [3]: Fix interleaved addressing problem in Kernel[2]. It is sequential addressing
+ *       ...
+ *       TBD
  *              
  * Compile:     nvcc -o reduction reduction.cpp reductionKernel.cu -I.. -I. -lcuda
  * Run:         ./reduction
@@ -9,7 +14,7 @@
  *      "--threads=<N>"     : Specify the number of threads per block (default: 256)
  *      "--maxblocks=<N>"   : Specify the maximum number of thread blocks (not applied)
  *      "--iteration=<N>"   : Specify the number of iteration (default: 100)
- *      "--kernel=<N>"      : Specify which kernel(sumReduce<N>) to run (1-3, default 1)
+ *      "--kernel=<N>"      : Specify which kernel(sumReduce<N>) to run (default 1)
  *      "--type=<T>"        : The datatype forthe reduction. <T> is "int", "float"
  *                            or "double" (default: int)
  *****************************************************************************/
@@ -140,7 +145,7 @@ bool run(int argc, char** argv, ReduceType dataType)
 
     T* h_out = (T*)malloc(numBlocks * sizeof(T));
     //printf("%d threads\n", numThreads);
-    printf("%d blocks\n\n", numBlocks);
+    printf("%d blocks\n", numBlocks);
 
     T* d_in, *d_out;
     CUDA_CHECK(cudaMalloc((void**)&d_in, bytes));
@@ -160,7 +165,7 @@ bool run(int argc, char** argv, ReduceType dataType)
 
     gpu_result = benchmarkReduce<T>(size, numThreads, numBlocks, maxThreads, maxBlocks, smemSize,
                                     whichKernel, nIter, finalReduce, total_time, h_out, d_in, d_out);
-    
+    printf("The number of iteration: %d\n", nIter);
     double reduceTime = (total_time / (double)nIter); //sec
     printf("[Kernel %d] Throughput = %.4f GB/s, Time = %.5f ms, Size = %u Elements\n",
         whichKernel, ((double)bytes / reduceTime)*1.0e-9, reduceTime * 1000, size);
