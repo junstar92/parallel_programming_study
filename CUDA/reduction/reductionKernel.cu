@@ -2,7 +2,7 @@
 
 // Wrapper function for kernel launch
 template <class T>
-void reduce(int size, int threads, int blocks, int whichKernel, T *d_in, T *d_out);
+void reduce(int size, int threads, int blocks, int smemSize, int whichKernel, T *d_in, T *d_out);
 
 // Sum Reduction Kernel functions
 template<class T>
@@ -112,13 +112,10 @@ __global__ void sumReduce3(T* g_in, T* g_out, unsigned int size)
 }
 
 template <class T>
-void reduce(int size, int threads, int blocks, int whichKernel, T *d_in, T *d_out)
+void reduce(int size, int threads, int blocks, int smemSize, int whichKernel, T *d_in, T *d_out)
 {
     dim3 dimBlock(threads, 1, 1);
     dim3 dimGrid(blocks, 1, 1);
-    int smemSize = (threads <= 32) ? 2 * threads * sizeof(T) : threads * sizeof(T);
-
-    sumReduce1<T><<<dimGrid, dimBlock, smemSize>>>(d_in, d_out, size);
 
     switch (whichKernel) {
         case 1:
@@ -134,11 +131,11 @@ void reduce(int size, int threads, int blocks, int whichKernel, T *d_in, T *d_ou
 }
 
 // Instantiate the reduction function for 3 types
-template void reduce<int>(int size, int threads, int blocks, int whichKernel,
+template void reduce<int>(int size, int threads, int blocks, int smemSize, int whichKernel,
                           int *d_in, int *d_out);
 
-template void reduce<float>(int size, int threads, int blocks, int whichKernel,
+template void reduce<float>(int size, int threads, int blocks, int smemSize, int whichKernel,
                             float *d_in, float *d_out);
 
-template void reduce<double>(int size, int threads, int blocks, int whichKernel,
+template void reduce<double>(int size, int threads, int blocks, int smemSize, int whichKernel,
                              double *d_in, double *d_out);

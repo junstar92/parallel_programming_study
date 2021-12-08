@@ -30,7 +30,7 @@ enum ReduceType {
 template <typename T>
 bool run(int argc, char** argv, ReduceType dataType);
 template <typename T>
-T benchmarkReduce(int size, int numThreads, int numBlocks, int maxThreads, int maxBlocks, int whichKernel,
+T benchmarkReduce(int size, int numThreads, int numBlocks, int maxThreads, int maxBlocks, int smemSize, int whichKernel,
                 int nIter, bool finalReduction, double& total_time, T* h_out, T* d_in, T* d_out);
 const char* getReduceTypeString(const ReduceType type);
 template <class T>
@@ -147,14 +147,18 @@ bool run(int argc, char** argv, ReduceType dataType)
     CUDA_CHECK(cudaMalloc((void**)&d_out, numBlocks * sizeof(T)));
 
     CUDA_CHECK(cudaMemcpy(d_in, h_in, bytes, cudaMemcpyHostToDevice));
+    
+    // calculate shared memory per block
+    int smemSize = (numThreads <= 32) ? 2 * numThreads * sizeof(T) : numThreads * sizeof(T);
+    printf("Shared Memory Size per Block: %d bytes\n", smemSize);
 
     // warm up
-    reduce<T>(size, numThreads, numBlocks, whichKernel, d_in, d_out);
+    reduce<T>(size, numThreads, numBlocks, smemSize, whichKernel, d_in, d_out);
 
     double total_time = 0;
     T gpu_result = 0;
 
-    gpu_result = benchmarkReduce<T>(size, numThreads, numBlocks, maxThreads, maxBlocks,
+    gpu_result = benchmarkReduce<T>(size, numThreads, numBlocks, maxThreads, maxBlocks, smemSize,
                                     whichKernel, nIter, finalReduce, total_time, h_out, d_in, d_out);
     
     double reduceTime = (total_time / (double)nIter); //sec
@@ -216,8 +220,8 @@ const char* getReduceTypeString(const ReduceType type)
 }
 
 template <typename T>
-T benchmarkReduce(int size, int numThreads, int numBlocks, int maxThreads, int maxBlocks, int whichKernel,
-                int nIter, bool finalReduction, double& total_time, T* h_out, T* d_in, T* d_out)
+T benchmarkReduce(int size, int numThreads, int numBlocks, int maxThreads, int maxBlocks, int smemSize, 
+                int whichKernel, int nIter, bool finalReduction, double& total_time, T* h_out, T* d_in, T* d_out)
 {
     T gpu_result = 0;
 
@@ -230,7 +234,7 @@ T benchmarkReduce(int size, int numThreads, int numBlocks, int maxThreads, int m
         GET_TIME(start);
 
         // execute the kernel
-        reduce<T>(size, numThreads, numBlocks, whichKernel, d_in, d_out);
+        reduce<T>(size, numThreads, numBlocks, smemSize, whichKernel, d_in, d_out);
         CUDA_CHECK(cudaGetLastError());
 
         if (finalReduction) {
