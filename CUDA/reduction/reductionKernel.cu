@@ -11,8 +11,6 @@ template<class T>
 __global__ void sumReduce2(T* g_in, T* g_out, unsigned int size);
 template<class T>
 __global__ void sumReduce3(T* g_in, T* g_out, unsigned int size);
-template<class T>
-__global__ void sumReduce4(T* g_in, T* g_out, unsigned int size);
 
 
 // Utility class used to avoid linker errors with extern

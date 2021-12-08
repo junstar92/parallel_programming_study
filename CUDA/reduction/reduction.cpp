@@ -8,7 +8,8 @@
  *      "--n=<N>"           : Specify the number of elements to reduce (default: 1 << 24)
  *      "--threads=<N>"     : Specify the number of threads per block (default: 256)
  *      "--maxblocks=<N>"   : Specify the maximum number of thread blocks (not applied)
- *      "--kernel=<N>"      : Specify which kernel(sumReduce<N>) to run (1-2, default 1)
+ *      "--iteration=<N>"   : Specify the number of iteration (default: 100)
+ *      "--kernel=<N>"      : Specify which kernel(sumReduce<N>) to run (1-3, default 1)
  *      "--type=<T>"        : The datatype forthe reduction. <T> is "int", "float"
  *                            or "double" (default: int)
  *****************************************************************************/
@@ -96,6 +97,7 @@ bool run(int argc, char** argv, ReduceType dataType)
     int whichKernel = 1;
     int maxBlocks = 64;
     bool finalReduce = true;
+    int nIter = 100;
 
     if (checkCmdLineFlag(argc, (const char **)argv, "n")) {
         size = getCmdLineArgumentInt(argc, (const char **)argv, "n");
@@ -111,6 +113,10 @@ bool run(int argc, char** argv, ReduceType dataType)
 
     if (checkCmdLineFlag(argc, (const char **)argv, "maxblocks")) {
         maxBlocks = getCmdLineArgumentInt(argc, (const char **)argv, "maxblocks");
+    }
+
+    if (checkCmdLineFlag(argc, (const char **)argv, "iteration")) {
+        nIter = getCmdLineArgumentInt(argc, (const char **)argv, "iteration");
     }
 
     printf("%d elements\n", size);
@@ -145,7 +151,6 @@ bool run(int argc, char** argv, ReduceType dataType)
     // warm up
     reduce<T>(size, numThreads, numBlocks, whichKernel, d_in, d_out);
 
-    int nIter = 100;
     double total_time = 0;
     T gpu_result = 0;
 
