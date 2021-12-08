@@ -1,6 +1,6 @@
 /*****************************************************************************
  * File:        reduction.cpp
- * Description: Implement Sum Reduction with some reduction kernels (1 ~ 3)
+ * Description: Implement Sum Reduction with some reduction kernels
  *      [1]: simple sum reduction with highly divergent warps
  *      [2]: revised version from Kernel[1], there is a bank conflicts of shared memory
  *      [3]: Fix interleaved addressing problem in Kernel[2]. It is sequential addressing
