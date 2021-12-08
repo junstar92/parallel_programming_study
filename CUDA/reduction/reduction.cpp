@@ -4,6 +4,12 @@
  *      [1]: simple sum reduction with highly divergent warps
  *      [2]: revised version from Kernel[1], there is a bank conflicts of shared memory
  *      [3]: Fix interleaved addressing problem in Kernel[2]. It is sequential addressing
+ *      [4]: This version uses n/2 threads by revising Kernel[3].
+ *           It performs the first level of reduction when reading from global memory.
+ *      [5]: This version uses the warp suffle operation if available to reduce
+ *           warp synchronization. When shuffle is not available the final warp's 
+ *           worth of work is unrolled to reduce looping overhead
+ *           See http://devblogs.nvidia.com/parallelforall/faster-parallel-reductions-kepler 
  *       ...
  *       TBD
  *              
@@ -299,8 +305,14 @@ void getNumBlocksAndThreads(int whichKernel, int n, int maxBlocks, int maxThread
     CUDA_CHECK(cudaGetDevice(&device));
     CUDA_CHECK(cudaGetDeviceProperties(&prop, device));
 
-    threads = (n < maxThreads) ? nextPow2(n) : maxThreads;
-    blocks = (n + threads - 1) / threads;
+    if (whichKernel < 4) {
+        threads = (n < maxThreads) ? nextPow2(n) : maxThreads;
+        blocks = (n + threads - 1) / threads;
+    }
+    else {
+        threads = (n < maxThreads * 2) ? nextPow2((n+1)/2) : maxThreads;
+        blocks = (n + (threads * 2 - 1)) / (threads * 2);
+    }
 
     if (((float)threads * blocks) > ((float)prop.maxGridSize[0] * prop.maxThreadsPerBlock)) {
         printf("n is too large, please choose a smaller number!\n");
