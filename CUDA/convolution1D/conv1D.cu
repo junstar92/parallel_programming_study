@@ -13,6 +13,7 @@
  *          [0] : basic 1D convolution without constant memory
  *          [1] : basic 1D convolution with constant memory
  *          [2] : tiled 1D convolution
+ *          [3] : tiled 1D convolution with L2 cache
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +32,8 @@ __global__ void convolution1D_basic_woConMem(float* d_N, float* d_M, float* d_P,
 __global__ void convolution1D_basic_wConMem(float* d_N, float* d_P, int Kernel_Width, int Width);
 template<unsigned int TILE_SIZE>
 __global__ void convolution1D_tiled(float* d_N, float* d_P, int Kernel_Width, int Width);
+template<unsigned int TILE_SIZE>
+__global__ void convolution1D_tiled_L2(float* d_N, float* d_P, int Kernel_Width, int Width);
 
 int main(int argc, char** argv)
 {
@@ -162,6 +165,44 @@ bool run(int size, int kernel_width, int threads, int blocks, int nIter, int whi
                         convolution1D_tiled<1><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
                         break;
                 }
+                break;
+            case 3:
+                switch (threads) {
+                    case 1024:
+                        convolution1D_tiled_L2<1024><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 512:
+                        convolution1D_tiled_L2<512><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 256:
+                        convolution1D_tiled_L2<256><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 128:
+                        convolution1D_tiled_L2<128><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 64:
+                        convolution1D_tiled_L2<64><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 32:
+                        convolution1D_tiled_L2<32><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 16:
+                        convolution1D_tiled_L2<16><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 8:
+                        convolution1D_tiled_L2<8><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 4:
+                        convolution1D_tiled_L2<4><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 2:
+                        convolution1D_tiled_L2<2><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                    case 1:
+                        convolution1D_tiled_L2<1><<<dimGrid, dimBlock>>>(d_N, d_P, kernel_width, size);
+                        break;
+                }
+                break;
         }
 
         CUDA_CHECK(cudaMemcpy(h_P, d_P, bytes, cudaMemcpyDeviceToHost));
@@ -236,7 +277,8 @@ void convolution1D_basic_wConMem(float* d_N, float* d_P, int Kernel_Width, int W
 }
 
 template<unsigned int TILE_SIZE>
-__global__ void convolution1D_tiled(float* d_N, float* d_P, int Kernel_Width, int Width)
+__global__
+void convolution1D_tiled(float* d_N, float* d_P, int Kernel_Width, int Width)
 {
     int i = blockIdx.x*blockDim.x + threadIdx.x;
     __shared__ float d_Nds[TILE_SIZE + MAX_KERNEL_WIDTH - 1];
@@ -259,5 +301,33 @@ __global__ void convolution1D_tiled(float* d_N, float* d_P, int Kernel_Width, in
     float Pvalue = 0;
     for (int j = 0; j < Kernel_Width; j++)
         Pvalue += d_Nds[threadIdx.x + j]*M[j];
+    d_P[i] = Pvalue;
+}
+
+template<unsigned int TILE_SIZE>
+__global__
+void convolution1D_tiled_L2(float* d_N, float* d_P, int Kernel_Width, int Width)
+{
+    int i = blockIdx.x*blockDim.x + threadIdx.x;
+    __shared__ float d_Nds[TILE_SIZE];
+
+    d_Nds[threadIdx.x] = d_N[i];
+    __syncthreads();
+
+    int this_tile_start_point = blockIdx.x * blockDim.x;
+    int next_tile_start_point = (blockIdx.x + 1) * blockDim.x;
+    int N_start_point = i - (Kernel_Width/2);
+    float Pvalue = 0;
+    for (int j = 0; j < Kernel_Width; j++) {
+        int N_index = N_start_point + j;
+        if (N_index >= 0 && N_index < Width) {
+            if ((N_index >= this_tile_start_point) && (N_index < next_tile_start_point)) {
+                Pvalue += d_Nds[threadIdx.x + j - (Kernel_Width/2)]*M[j];
+            }
+            else {
+                Pvalue += d_N[N_index] * M[j];
+            }
+        }
+    }
     d_P[i] = Pvalue;
 }
