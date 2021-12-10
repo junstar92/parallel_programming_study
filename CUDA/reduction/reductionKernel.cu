@@ -19,6 +19,8 @@ __global__ void sumReduce4(T* g_in, T* g_out, unsigned int size);
 template<class T, unsigned int blockSize>
 __global__ void sumReduce5(T* g_in, T* g_out, unsigned int size);
 
+template<class T>
+__device__ void warpReduce(volatile T* sdata, int t);
 
 // Utility class used to avoid linker errors with extern
 // unsized shared memory arrays with templated type
@@ -55,6 +57,8 @@ struct SharedMemory<double>
         return (double *)__smem_d;
     }
 };
+
+// See https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 
 template<class T>
 __global__ void sumReduce1(T* g_in, T* g_out, unsigned int size)
@@ -178,6 +182,17 @@ __global__ void sumReduce5(T* g_in, T* g_out, unsigned int size)
     // write result for this block to global memory
     if (cta.thread_rank() == 0)
         g_out[blockIdx.x] = mySum;
+}
+
+template<class T>
+__device__ void warpReduce(volatile T* sdata, int t)
+{
+    sdata[t] += sdata[t+32];
+    sdata[t] += sdata[t+16];
+    sdata[t] += sdata[t+8];
+    sdata[t] += sdata[t+4];
+    sdata[t] += sdata[t+2];
+    sdata[t] += sdata[t+1];
 }
 
 template <class T>
