@@ -226,8 +226,17 @@ bool run(int size, int kernel_width, int threads, int blocks, int nIter, int whi
 
     double elapsedTime = (total_time / (double)nIter);
     printf("[Kernel %d] Throghput = %.4f GB/s, Time = %.5f ms\n",
-        whichKernel, ((double)bytes / elapsedTime)*1.0e-9, elapsedTime);
+        whichKernel, ((double)bytes / elapsedTime)*1.0e-9, elapsedTime * 1000);
     printf("Error : %.*f\n", precision, (double)diff);
+
+    // free memory
+    free(h_P);
+    free(h_M);
+    free(h_N);
+    CUDA_CHECK(cudaFree(d_P));
+    CUDA_CHECK(cudaFree(d_M));
+    CUDA_CHECK(cudaFree(d_N));
+    free(cpu_P);
 
     return (diff < threshold);
 }
