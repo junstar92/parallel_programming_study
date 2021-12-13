@@ -1,6 +1,6 @@
 /*****************************************************************************
  * File:        conv2D.cpp
- * Description: 
+ * Description: Implement 2D convolution
  *              
  * Compile:     nvcc -o conv2D conv2D.cu -I..
  * Run:         ./conv2D
@@ -9,6 +9,9 @@
  *      "--height=<N>"      : Specify the number of height of input image (default: 1920)
  *      "--channel=<N>"     : Specify the number of channels of input image (default: 1, <= 3)
  *      "--filter=<N>"      : Specify the number of filter width for convolution (default: 5)
+ *      "--kernel=<N>"      : Specify which kernel to run (default 0)
+ *          [0] : basic 2D convolution with constant memory
+ *          [1] : tiled 2D convolution with constant memory
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>

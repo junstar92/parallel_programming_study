@@ -1,6 +1,6 @@
 /*****************************************************************************
  * File:        conv1D.cpp
- * Description: 
+ * Description: Implement 1D convolution
  *              
  * Compile:     nvcc -o conv1D conv1D.cu -I..
  * Run:         ./conv1D
