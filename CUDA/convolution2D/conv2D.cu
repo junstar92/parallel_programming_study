@@ -153,7 +153,7 @@ bool run(int width, int height, int channels, int kernel_width, int whichKernel)
     }
     diff /= (double)channels*width*height;
 
-    printf("[Kernel %d] Throghput = %.4f GB/s, Time = %.5f ms\n",
+    printf("[Kernel %d] Throughput = %.4f GB/s, Time = %.5f ms\n",
         whichKernel, ((double)bytes / (finish-start))*1.0e-9, (finish-start)*1000);
     printf("Error : %.*f (threshold: %f)\n", precision, (double)diff, threshold);
 
