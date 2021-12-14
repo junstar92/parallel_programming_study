@@ -1,5 +1,5 @@
 /*****************************************************************************
- * File:        conv2D.cpp
+ * File:        conv2D.cu
  * Description: Implement 2D convolution
  *              
  * Compile:     nvcc -o conv2D conv2D.cu -I..

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * File:        conv1D.cpp
+ * File:        conv1D.cu
  * Description: Implement 1D convolution
  *              
  * Compile:     nvcc -o conv1D conv1D.cu -I..
@@ -225,7 +225,7 @@ bool run(int size, int kernel_width, int threads, int blocks, int nIter, int whi
     diff /= (double)size;
 
     double elapsedTime = (total_time / (double)nIter);
-    printf("[Kernel %d] Throghput = %.4f GB/s, Time = %.5f ms\n",
+    printf("[Kernel %d] Throughput = %.4f GB/s, Time = %.5f ms\n",
         whichKernel, ((double)bytes / elapsedTime)*1.0e-9, elapsedTime * 1000);
     printf("Error : %.*f\n", precision, (double)diff);
 
