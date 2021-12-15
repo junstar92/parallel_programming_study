@@ -24,6 +24,7 @@ bool run(int n, int threads, int whichKernel);
 void launchKernel(int n, int whichKernel, dim3 dimBlock, dim3 dimGrid, float* h_out, float* d_in, float* d_out);
 void sequentialScan(float* x, float* y, int n);
 __global__ void koggeStoneScan(float* X, float* Y, int n);
+__global__ void brentKungScan(float* X, float* Y, int n);
 
 int main(int argc, char** argv)
 {
@@ -65,9 +66,9 @@ bool run(int n, int threads, int whichKernel)
     h_in = (float*)malloc(bytes);
     h_out = (float*)malloc(bytes);
 
-    // init value
+    // init value (change all init value to 1.0 to ignore float-point error)
     for (int i = 0; i < n; i++)
-        h_in[i] = rand() / (float)RAND_MAX;
+        h_in[i] = rand() / (float)RAND_MAX; 
 
     // allocate device memory
     CUDA_CHECK(cudaMalloc((void**)&d_in, bytes));
@@ -77,8 +78,19 @@ bool run(int n, int threads, int whichKernel)
 
     double start, finish, total_time = 0.f;
     // Launch Kernel
-    dim3 dimBlock(SECTION_SIZE, 1, 1);
-    dim3 dimGrid((n + SECTION_SIZE - 1) / SECTION_SIZE, 1, 1);
+    dim3 dimBlock, dimGrid;
+    switch (whichKernel) {
+        default:
+            whichKernel = 0;
+        case 0:
+            dimBlock.x = SECTION_SIZE;
+            dimGrid.x = (n + dimBlock.x - 1) / dimBlock.x;
+            break;
+        case 1:
+            dimBlock.x = SECTION_SIZE / 2;
+            dimGrid.x = (n + SECTION_SIZE - 1) / SECTION_SIZE;
+            break;
+    }
     printf("block dim: %d x %d x %d\n", dimBlock.x, dimBlock.y, dimBlock.z);
     printf("grid dim: %d x %d x %d\n\n", dimGrid.x, dimGrid.y, dimGrid.z);
 
@@ -142,6 +154,18 @@ void launchKernel(int n, int whichKernel, dim3 dimBlock, dim3 dimGrid, float* h_
                 }
             }
             break;
+        case 1:
+            brentKungScan<<<dimGrid, dimBlock>>>(d_in, d_out, n);
+            CUDA_CHECK(cudaMemcpy(h_out, d_out, n*sizeof(float), cudaMemcpyDeviceToHost));
+            for (int i = 1; i < dimGrid.x; i++) {
+                int offset = i*SECTION_SIZE;
+                float tmp = h_out[offset - 1];
+                
+                for (int j = 0; (j < SECTION_SIZE) && (offset + j < n); j++) {
+                    h_out[offset + j] += tmp;
+                }
+            }
+            break;
     }
 }
 
@@ -174,4 +198,37 @@ void koggeStoneScan(float* X, float* Y, int n)
     
     if (i < n)
         Y[i] = XY[threadIdx.x];
+}
+
+__global__
+void brentKungScan(float* X, float* Y, int n)
+{
+    __shared__ float XY[SECTION_SIZE];
+    int i = 2*blockIdx.x*blockDim.x + threadIdx.x;
+    if (i < n)
+        XY[threadIdx.x] = X[i];
+    if (i + blockDim.x < n)
+        XY[threadIdx.x + blockDim.x] = X[i + blockDim.x];
+
+    for (unsigned int stride = 1; stride <= blockDim.x; stride *= 2) {
+        __syncthreads();
+        int index = ((threadIdx.x + 1) * stride * 2) - 1;
+        if (index < SECTION_SIZE) {
+            XY[index] += XY[index - stride];
+        }
+    }
+
+    for (unsigned int stride = SECTION_SIZE/4; stride > 0; stride /= 2) {
+        __syncthreads();
+        int index = ((threadIdx.x + 1) * stride * 2) - 1;
+        if (index + stride < SECTION_SIZE) {
+            XY[index + stride] += XY[index];
+        }
+    }
+
+    __syncthreads();
+    if (i < n)
+        Y[i] = XY[threadIdx.x];
+    if (i + blockDim.x < n)
+        Y[i + blockDim.x] = XY[threadIdx.x + blockDim.x];
 }
