@@ -1,6 +1,6 @@
 /*****************************************************************************
  * File:        histogram.cu
- * Description: 
+ * Description: Implement text histogram computation
  *              
  * Compile:     nvcc -o histogram histogram.cu -I..
  * Run:         ./histogram
@@ -24,6 +24,7 @@
 void sequential_Histogram(char* data, int n, int* histo);
 __global__ void histo_kernel(char* data, int n, int* histo);
 __global__ void histo_kernel_2(char* data, int n, int* histo);
+__global__ void histo_privatized_kernel(char* data, int n, int* histo, int n_bins);
 
 int main(int argc, char** argv)
 {
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
     int whichKernel = 0;
     int threads = 256;
     int blocks = 256;
+    int n_bins = 7; // the number of bins, a-d, e-h, i-l, m-p, q-t, u-x, y-z
 
     if (checkCmdLineFlag(argc, (const char **)argv, "n")) {
         n = getCmdLineArgumentInt(argc, (const char **)argv, "n");
@@ -59,7 +61,7 @@ int main(int argc, char** argv)
 
     // allocate host memory
     h_data = (char*)malloc(bytes);
-    h_histo = (int*)malloc(7*sizeof(int));
+    h_histo = (int*)malloc(n_bins*sizeof(int));
 
     // init
     std::default_random_engine generator;
@@ -67,14 +69,14 @@ int main(int argc, char** argv)
     for (int i = 0; i < n; i++) {
         h_data[i] = dist(generator);
     }
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < n_bins; i++)
         h_histo[i] = 0;
 
     // allocate device memory
     char* d_data;
     int *d_histo;
     CUDA_CHECK(cudaMalloc((void**)&d_data, bytes));
-    CUDA_CHECK(cudaMalloc((void**)&d_histo, 7*sizeof(int)));
+    CUDA_CHECK(cudaMalloc((void**)&d_histo, n_bins*sizeof(int)));
 
     CUDA_CHECK(cudaMemcpy(d_data, h_data, bytes, cudaMemcpyHostToDevice));
 
@@ -86,17 +88,22 @@ int main(int argc, char** argv)
     }
     else if (whichKernel == 1) {
         histo_kernel<<<blocks, threads>>>(d_data, n, d_histo);
-        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, 7*sizeof(int), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, n_bins*sizeof(int), cudaMemcpyDeviceToHost));
     }
     else if (whichKernel == 2) {
         histo_kernel_2<<<blocks, threads>>>(d_data, n, d_histo);
-        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, 7*sizeof(int), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, n_bins*sizeof(int), cudaMemcpyDeviceToHost));
+    }
+    else if (whichKernel == 3) {
+        int smem_size = 2*n_bins*sizeof(int);
+        histo_privatized_kernel<<<blocks, threads, smem_size>>>(d_data, n, d_histo, 7);
+        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, n_bins*sizeof(int), cudaMemcpyDeviceToHost));
     }
     GET_TIME(finish);
 
     int total_count = 0;
     printf("histo: ");
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < n_bins; i++) {
         printf("%d ", h_histo[i]);
         total_count += h_histo[i];
     }
@@ -149,5 +156,30 @@ void histo_kernel_2(char* data, int n, int* histo)
         int alphabet_pos = data[i] - 'a';
         if (alphabet_pos >= 0 && alphabet_pos < 26)
             atomicAdd(&histo[alphabet_pos/4], 1);
+    }
+}
+
+__global__
+void histo_privatized_kernel(char* data, int n, int* histo, int n_bins)
+{
+    int tid = blockDim.x*blockIdx.x + threadIdx.x;
+
+    // Privatized bins
+    extern __shared__ int histo_s[];
+    if (threadIdx.x < n_bins)
+        histo_s[threadIdx.x] = 0u;
+    __syncthreads();
+
+    // histogram
+    for (int i = tid; i < n; i += blockDim.x*gridDim.x) {
+        int alphabet_pos = data[i] - 'a';
+        if (alphabet_pos >= 0 && alphabet_pos < 26)
+            atomicAdd(&histo_s[alphabet_pos/4], 1);
+    }
+    __syncthreads();
+
+    // commit to global memory
+    if (threadIdx.x < n_bins) {
+        atomicAdd(&histo[threadIdx.x], histo_s[threadIdx.x]);
     }
 }
