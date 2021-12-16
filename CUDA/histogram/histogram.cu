@@ -11,6 +11,7 @@
  *      "--blocks=<N>"      : Specify the number of blocks per grid (default: 256)
  *          [0] : Sequential Histogram
  *          [1] : Simple Parallel Histogram
+ *          [2] : Fix [1] Kernel for memory coalescing
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,7 @@
 
 void sequential_Histogram(char* data, int n, int* histo);
 __global__ void histo_kernel(char* data, int n, int* histo);
+__global__ void histo_kernel_2(char* data, int n, int* histo);
 
 int main(int argc, char** argv)
 {
@@ -86,8 +88,9 @@ int main(int argc, char** argv)
         histo_kernel<<<blocks, threads>>>(d_data, n, d_histo);
         CUDA_CHECK(cudaMemcpy(h_histo, d_histo, 7*sizeof(int), cudaMemcpyDeviceToHost));
     }
-    else {
-
+    else if (whichKernel == 2) {
+        histo_kernel_2<<<blocks, threads>>>(d_data, n, d_histo);
+        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, 7*sizeof(int), cudaMemcpyDeviceToHost));
     }
     GET_TIME(finish);
 
@@ -137,14 +140,14 @@ void histo_kernel(char* data, int n, int* histo)
     }
 }
 
-// __global__
-// void histo_kernel(char* data, int n, int* histo)
-// {
-//     int tid = blockDim.x*blockIdx.x + threadIdx.x;
+__global__
+void histo_kernel_2(char* data, int n, int* histo)
+{
+    int tid = blockDim.x*blockIdx.x + threadIdx.x;
 
-//     if (tid < n) {
-//         int alphabet_pos = data[tid] - 'a';
-//         if (alphabet_pos >= 0 && alphabet_pos < 26)
-//             atomicAdd(&histo[alphabet_pos/4], 1);
-//     }
-// }
+    for (int i = tid; i < n; i += blockDim.x*gridDim.x) {
+        int alphabet_pos = data[i] - 'a';
+        if (alphabet_pos >= 0 && alphabet_pos < 26)
+            atomicAdd(&histo[alphabet_pos/4], 1);
+    }
+}
