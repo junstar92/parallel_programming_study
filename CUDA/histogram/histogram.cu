@@ -12,6 +12,8 @@
  *          [0] : Sequential Histogram
  *          [1] : Simple Parallel Histogram
  *          [2] : Fix [1] Kernel for memory coalescing
+ *          [3] : Privatized Histogram Kernel
+ *          [4] : Privatized Aggregation Histogram Kernel
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +27,7 @@ void sequential_Histogram(char* data, int n, int* histo);
 __global__ void histo_kernel(char* data, int n, int* histo);
 __global__ void histo_kernel_2(char* data, int n, int* histo);
 __global__ void histo_privatized_kernel(char* data, int n, int* histo, int n_bins);
+__global__ void histo_privatized_aggregation_kernel(char* data, int n, int* histo, int n_bins);
 
 int main(int argc, char** argv)
 {
@@ -97,6 +100,11 @@ int main(int argc, char** argv)
     else if (whichKernel == 3) {
         int smem_size = 2*n_bins*sizeof(int);
         histo_privatized_kernel<<<blocks, threads, smem_size>>>(d_data, n, d_histo, 7);
+        CUDA_CHECK(cudaMemcpy(h_histo, d_histo, n_bins*sizeof(int), cudaMemcpyDeviceToHost));
+    }
+    else if (whichKernel == 4) {
+        int smem_size = 2*n_bins*sizeof(int);
+        histo_privatized_aggregation_kernel<<<blocks, threads, smem_size>>>(d_data, n, d_histo, 7);
         CUDA_CHECK(cudaMemcpy(h_histo, d_histo, n_bins*sizeof(int), cudaMemcpyDeviceToHost));
     }
     GET_TIME(finish);
@@ -176,6 +184,46 @@ void histo_privatized_kernel(char* data, int n, int* histo, int n_bins)
         if (alphabet_pos >= 0 && alphabet_pos < 26)
             atomicAdd(&histo_s[alphabet_pos/4], 1);
     }
+    __syncthreads();
+
+    // commit to global memory
+    if (threadIdx.x < n_bins) {
+        atomicAdd(&histo[threadIdx.x], histo_s[threadIdx.x]);
+    }
+}
+
+__global__
+void histo_privatized_aggregation_kernel(char* data, int n, int* histo, int n_bins)
+{
+    int tid = blockDim.x*blockIdx.x + threadIdx.x;
+
+    // Privatized bins
+    extern __shared__ int histo_s[];
+    if (threadIdx.x < n_bins)
+        histo_s[threadIdx.x] = 0u;
+    __syncthreads();
+
+    int prev_index = -1;
+    int accumulator = 0;
+
+    // histogram
+    for (int i = tid; i < n; i += blockDim.x*gridDim.x) {
+        int alphabet_pos = data[i] - 'a';
+        if (alphabet_pos >= 0 && alphabet_pos < 26) {
+            int curr_index = alphabet_pos/4;
+            if (curr_index != prev_index) {
+                if (prev_index != -1 && accumulator > 0)
+                    atomicAdd(&histo_s[prev_index], accumulator);
+                accumulator = 1;
+                prev_index = curr_index;
+            }
+            else {
+                accumulator++;
+            }
+        }
+    }
+    if (accumulator > 0)
+        atomicAdd(&histo_s[prev_index], accumulator);
     __syncthreads();
 
     // commit to global memory
