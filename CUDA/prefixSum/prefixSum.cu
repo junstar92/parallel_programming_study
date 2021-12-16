@@ -6,7 +6,6 @@
  * Run:         ./prefixSum
  * Argument:
  *      "--n=<N>"           : Specify the number of elements (default: 1<<24)
- *      "--threads=<N>"     : Specify the number of block's threads (default: 256)
  *      "--kernel=<N>"      : Specify which kernel to run (default 0)
  *          [0] : Kogge-Stone Scan Algorithm
  *          [1] : Brent-Kung Adder Algorithm (todo)
@@ -20,7 +19,7 @@
 
 #define SECTION_SIZE 512
 
-bool run(int n, int threads, int whichKernel);
+bool run(int n, int whichKernel);
 void launchKernel(int n, int whichKernel, dim3 dimBlock, dim3 dimGrid, float* h_out, float* d_in, float* d_out);
 void sequentialScan(float* x, float* y, int n);
 __global__ void koggeStoneScan(float* X, float* Y, int n);
@@ -30,14 +29,10 @@ int main(int argc, char** argv)
 {
     printf("[Prefix Summation...]\n\n");
     int n = 1 << 24;
-    int threads = 256;
     int whichKernel = 0;
 
     if (checkCmdLineFlag(argc, (const char **)argv, "n")) {
         n = getCmdLineArgumentInt(argc, (const char **)argv, "n");
-    }
-    if (checkCmdLineFlag(argc, (const char **)argv, "threads")) {
-        threads = getCmdLineArgumentInt(argc, (const char **)argv, "threads");
     }
     if (checkCmdLineFlag(argc, (const char **)argv, "kernel")) {
         whichKernel = getCmdLineArgumentInt(argc, (const char **)argv, "kernel");
@@ -48,7 +43,7 @@ int main(int argc, char** argv)
     int dev = 0;
     CUDA_CHECK(cudaSetDevice(dev));
 
-    run(n, threads, whichKernel);
+    run(n, whichKernel);
 
     printf("[Done]\n\n");
     cudaDeviceReset();
@@ -56,7 +51,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool run(int n, int threads, int whichKernel)
+bool run(int n, int whichKernel)
 {
     unsigned int bytes = n * sizeof(float);
     float* h_in, *h_out;
