@@ -6,9 +6,9 @@
  * Run:         ./histogram
  * Argument:
  *      "--n=<N>"           : Specify the number of elements (default: 1<<24)
- *      "--kernel=<N>"      : Specify which kernel to run (default 0)
  *      "--threads=<N>"     : Specify the number of threads per block (default: 256)
  *      "--blocks=<N>"      : Specify the number of blocks per grid (default: 256)
+ *      "--kernel=<N>"      : Specify which kernel to run (default 0)
  *          [0] : Sequential Histogram
  *          [1] : Simple Parallel Histogram
  *          [2] : Fix [1] Kernel for memory coalescing
