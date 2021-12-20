@@ -287,6 +287,7 @@ int main(int argc, char** argv)
 
         GET_TIME(start);
         SpMV_ELL<<<blocks, threads>>>(N, d_data_forELL, d_col_index_forELL, limitNum, d_vec_X, d_vec_Y);
+        cudaDeviceSynchronize();
         SpMV_COO<<<blocks, threads>>>(d_data_forCOO, d_col_index_forCOO, d_row_index_forCOO, coo_data_cnt, d_vec_X, d_vec_Y);
         CUDA_CHECK(cudaMemcpy(h_vec_Y, d_vec_Y, vec_bytes, cudaMemcpyDeviceToHost));
         //SpMV_COO_seq(h_data_forCOO, h_col_index_forCOO, h_row_index_forCOO, coo_data_cnt, h_vec_X, h_vec_Y);
