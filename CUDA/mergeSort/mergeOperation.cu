@@ -9,6 +9,8 @@
  *      "--m=<N>"           : Specify the number of elements in array A (default: 1<<22)
  *      "--n=<N>"           : Specify the number of elements in array B (default: 1<<22)
  *      "--threads=<N>"     : Specify the number of threads per block (default: 512)
+ *      "--blocks=<N>"      : Specify the number of blocks (default: 32);
+ *      "--tile=<N>"        : Specify the number of tile size (default: 1024)
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +33,7 @@ bool checkValid(int* arr, int size);
 __host__ __device__ void sequentialMerge(int* A, int m, int* B, int n, int* C);
 __host__ __device__ int co_rank(int k, int* A, int m, int* B, int n);
 __global__ void merge_basic_kernel(int* A, int m, int* B, int n, int* C);
-
+__global__ void merge_tiled_kernel(int* A, int m, int* B, int n, int* C, int tile_size);
 
 int main(int argc, char** argv)
 {
@@ -39,6 +41,8 @@ int main(int argc, char** argv)
     int m = 1<<22;
     int n = 1<<22;
     int threads = 512;
+    int blocks = 32;
+    int tile_size = 1024;
 
     if (checkCmdLineFlag(argc, (const char **)argv, "m")) {
         m = getCmdLineArgumentInt(argc, (const char **)argv, "m");
@@ -48,6 +52,9 @@ int main(int argc, char** argv)
     }
     if (checkCmdLineFlag(argc, (const char **)argv, "threads")) {
         threads = getCmdLineArgumentInt(argc, (const char **)argv, "threads");
+    }
+    if (checkCmdLineFlag(argc, (const char **)argv, "tile")) {
+        tile_size = getCmdLineArgumentInt(argc, (const char **)argv, "tile");
     }
 
     printf("Size of input array A: %d\n", m);
@@ -100,7 +107,6 @@ int main(int argc, char** argv)
 
     // basic parallel merge operation
     printf("\n[Basic Parallel Merge Operation...]\n");
-    int blocks = (m+n + threads - 1) / threads;
     printf("The number of threads per block: %d\n", threads);
     printf("The number of blocks in Grid: %d\n", blocks);
     GET_TIME(start);
@@ -114,6 +120,18 @@ int main(int argc, char** argv)
     printArray(h_out, m+n);
     printf("\n");
 #endif
+
+    // tiled parallel merge operation
+    printf("\n[Tiled Parallel Merge Operation...]\n");
+    printf("The number of threads per block: %d\n", threads);
+    printf("The number of blocks in Grid: %d\n", blocks);
+    printf("The number of tiles: %d\n", tile_size);
+    GET_TIME(start);
+    merge_tiled_kernel<<<blocks, threads, 1024*8>>>(d_in, m, d_in+m, n, d_out, tile_size);
+    CUDA_CHECK(cudaMemcpy(h_out, d_out, (m+n)*sizeof(int), cudaMemcpyDeviceToHost));
+    GET_TIME(finish);
+    printf("\tElapsed Time: %.6f msec\n", (finish-start)*1000);
+    printf(checkValid(h_out, n) ? "PASSED\n" : "FAILED\n");
 
     free(h_in);
     free(h_out);
@@ -197,6 +215,75 @@ void merge_basic_kernel(int* A, int m, int* B, int n, int* C)
     int i_next = co_rank(k_next, A, m, B, n);
     int j_curr = k_curr - i_curr;
     int j_next = k_next - i_next;
-    
+
     sequentialMerge(A+i_curr, i_next-i_curr, B+j_curr, j_next-j_curr, C+k_curr);
+}
+
+__global__
+void merge_tiled_kernel(int* A, int m, int* B, int n, int* C, int tile_size)
+{
+    /* Part 1 : Identifying block-level output and input subarrays */
+    extern __shared__ int shareAB[];
+    int* A_S = shareAB;
+    int* B_S = shareAB + tile_size;
+    int C_curr = blockIdx.x * ceil((m+n)/(float)gridDim.x);
+    int C_next = min((blockIdx.x+1) * (int)ceil((m+n)/(float)gridDim.x), m+n);
+
+    if (threadIdx.x == 0) {
+        A_S[0] = co_rank(C_curr, A, m, B, n);
+        A_S[1] = co_rank(C_next, A, m, B, n);
+    }
+    __syncthreads();
+
+    int A_curr = A_S[0];
+    int A_next = A_S[1];
+    int B_curr = C_curr - A_curr;
+    int B_next = C_next - A_next;
+    __syncthreads();
+
+    int counter = 0;
+    int C_length = C_next - C_curr;
+    int A_length = A_next - A_curr;
+    int B_length = B_next - B_curr;
+    int total_iteration = ceil((C_length)/(float)tile_size);
+    int C_completed = 0;
+    int A_consumed = 0;
+    int B_consumed = 0;
+
+    while (counter < total_iteration) {
+        /* Part 2 : Loading A and B elements into the shared memory */
+        /* loading tile-size A and B elements into shared memory */
+        for (int i = 0; i < tile_size; i += blockDim.x) {
+            if (i + threadIdx.x < A_length - A_consumed)
+                A_S[i + threadIdx.x] = A[A_curr + A_consumed + i + threadIdx.x];
+        }
+        for (int i = 0; i < tile_size; i += blockDim.x) {
+            if (i + threadIdx.x < B_length - B_consumed)
+                B_S[i + threadIdx.x] = B[B_curr + B_consumed + i + threadIdx.x];
+        }
+        __syncthreads();
+        
+        /* Part 3 : All threads merge their individual subarrays in parallel */
+        int c_curr = threadIdx.x * (tile_size/blockDim.x);
+        int c_next = (threadIdx.x+1) * (tile_size/blockDim.x);
+        c_curr = (c_curr <= C_length - C_completed) ? c_curr : C_length - C_completed;
+        c_next = (c_next <= C_length - C_completed) ? c_next : C_length - C_completed;
+        
+        // find co-rank for c_curr and c_next
+        int a_curr = co_rank(c_curr, A_S, min(tile_size, A_length-A_consumed), B_S, min(tile_size, B_length-B_consumed));
+        int b_curr = c_curr - a_curr;
+        int a_next = co_rank(c_next, A_S, min(tile_size, A_length-A_consumed), B_S, min(tile_size, B_length-B_consumed));
+        int b_next = c_next - a_next;
+
+        // All threads call the sequential merge function
+        sequentialMerge(A_S + a_curr, a_next - a_curr, 
+                    B_S + b_curr, b_next - b_curr, 
+                    C + C_curr + C_completed + c_curr);
+        // Update the A and B elements that have been consumed thus far
+        counter++;
+        C_completed += tile_size;
+        A_consumed += co_rank(tile_size, A_S, tile_size, B_S, tile_size);
+        B_consumed = C_completed - A_consumed;
+        __syncthreads();
+    }
 }
