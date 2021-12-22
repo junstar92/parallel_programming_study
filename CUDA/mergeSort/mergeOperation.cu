@@ -115,11 +115,6 @@ int main(int argc, char** argv)
     printf("\n");
 #endif
 
-    int A[5] = {1,7,8,9,10};
-    int B[4] = {7,10,10,12};
-
-    merge_basic_kernel<<<1, 2>>>(A, 5, B, 4, h_out);
-
     free(h_in);
     free(h_out);
     CUDA_CHECK(cudaFree(d_in));
