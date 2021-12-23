@@ -122,12 +122,14 @@ int main(int argc, char** argv)
 #endif
 
     // tiled parallel merge operation
+    int smem_size = tile_size*2*4; // bytes
     printf("\n[Tiled Parallel Merge Operation...]\n");
     printf("The number of threads per block: %d\n", threads);
     printf("The number of blocks in Grid: %d\n", blocks);
     printf("The number of tiles: %d\n", tile_size);
+    printf("The size of shared memory per block: %d bytes\n", smem_size);
     GET_TIME(start);
-    merge_tiled_kernel<<<blocks, threads, 1024*8>>>(d_in, m, d_in+m, n, d_out, tile_size);
+    merge_tiled_kernel<<<blocks, threads, smem_size>>>(d_in, m, d_in+m, n, d_out, tile_size);
     CUDA_CHECK(cudaMemcpy(h_out, d_out, (m+n)*sizeof(int), cudaMemcpyDeviceToHost));
     GET_TIME(finish);
     printf("\tElapsed Time: %.6f msec\n", (finish-start)*1000);
@@ -252,7 +254,7 @@ void merge_tiled_kernel(int* A, int m, int* B, int n, int* C, int tile_size)
 
     while (counter < total_iteration) {
         /* Part 2 : Loading A and B elements into the shared memory */
-        /* loading tile-size A and B elements into shared memory */
+        // loading tile-size A and B elements into shared memory
         for (int i = 0; i < tile_size; i += blockDim.x) {
             if (i + threadIdx.x < A_length - A_consumed)
                 A_S[i + threadIdx.x] = A[A_curr + A_consumed + i + threadIdx.x];
