@@ -253,18 +253,10 @@ void BFS(int source, int* adj, int numVertex, int* label)
 void BFS_host(int source, int* h_edges, int* h_dest, int* h_label, int numVertex, int numNonzero)
 {
     // host memory
-    int *h_p_frontier = (int*)malloc(numVertex*sizeof(int));
-    int *h_c_frontier = (int*)malloc(numVertex*sizeof(int));
     int h_p_frontier_tail = 1;
-    int h_c_frontier_tail = 0;
-    int *h_visited = (int*)malloc(numVertex*sizeof(int));
-    for (int i = 0; i < numVertex; i++)
-        h_visited[i] = 0;
     
     // init
     h_label[source] = 0;
-    h_visited[source] = 1;
-    h_p_frontier[0] = source;
 
     // allocate device memory
     int *d_edges, *d_dest, *d_label, *d_visited;
@@ -287,8 +279,8 @@ void BFS_host(int source, int* h_edges, int* h_dest, int* h_label, int numVertex
     int *d_p_frontier = &d_frontier[numVertex];
 
     // init
-    CUDA_CHECK(cudaMemcpy(d_visited, h_visited, numVertex*sizeof(int), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_frontier+numVertex, h_p_frontier, numVertex*sizeof(int), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemset(d_visited+source, 1, sizeof(int)));
+    CUDA_CHECK(cudaMemset(d_frontier+numVertex, source, sizeof(int)));
     CUDA_CHECK(cudaMemcpy(d_p_frontier_tail, &h_p_frontier_tail, sizeof(int), cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(d_label, h_label, numVertex*sizeof(int), cudaMemcpyHostToDevice));
 
@@ -303,16 +295,12 @@ void BFS_host(int source, int* h_edges, int* h_dest, int* h_label, int numVertex
         d_p_frontier = temp;
 
         CUDA_CHECK(cudaMemcpy(d_p_frontier_tail, d_c_frontier_tail, sizeof(int), cudaMemcpyDeviceToDevice));
-        h_c_frontier_tail = 0;
-        CUDA_CHECK(cudaMemcpy(d_c_frontier_tail, &h_c_frontier_tail, sizeof(int), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemset(d_c_frontier_tail, 0, sizeof(int)));
     }
 
     CUDA_CHECK(cudaMemcpy(h_label, d_label, numVertex*sizeof(int), cudaMemcpyDeviceToHost));
 
     // free memory
-    free(h_p_frontier);
-    free(h_c_frontier);
-    free(h_visited);
     CUDA_CHECK(cudaFree(d_edges));
     CUDA_CHECK(cudaFree(d_dest));
     CUDA_CHECK(cudaFree(d_label));
@@ -358,7 +346,7 @@ void BFS_Bqueue_kernel(int* p_frontier, int* p_frontier_tail, int* c_frontier, i
     }
     __syncthreads();
 
-    for (int i = threadIdx.x; i < c_frontier_tail_s; i++) {
+    for (int i = threadIdx.x; i < c_frontier_tail_s; i += blockDim.x) {
         c_frontier[our_c_frontier_tail + i] = c_frontier_s[i];
     }
 }
