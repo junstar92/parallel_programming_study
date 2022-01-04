@@ -3,3 +3,9 @@
 !*/
 
 .vscode/
+
+*.exe
+*.exp
+*.pdb
+*.ncu*
+*.lib
