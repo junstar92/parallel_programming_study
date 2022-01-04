@@ -3,7 +3,7 @@
  * Description: Measure the performance of some kernels.
  *              One has warp divergence and others doesn't have warp divergence.
  *              
- * Compile:     nvcc -O3 -arch=sm_75 -o simpleDivergence simpleDivergence.cu -I..
+ * Compile:     nvcc -g -G -arch=sm_75 -o simpleDivergence simpleDivergence.cu -I..
  * Run:         ./simpleDivergence
  * Argument:    n.a
  *****************************************************************************/
