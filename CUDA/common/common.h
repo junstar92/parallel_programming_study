@@ -7,37 +7,29 @@
 #include <cuda_runtime.h>
 
 #ifdef _WIN32
-#include <Windows.h>
-#include <stdint.h>
-int gettimeofday(struct timeval * tp, struct timezone * tzp)
+#include <chrono>
+static std::chrono::high_resolution_clock::time_point getNow()
 {
-    // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
-    // This magic number is the number of 100 nanosecond intervals since January 1, 1601 (UTC)
-    // until 00:00:00 January 1, 1970 
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-
-    SYSTEMTIME  system_time;
-    FILETIME    file_time;
-    uint64_t    time;
-
-    GetSystemTime( &system_time );
-    SystemTimeToFileTime( &system_time, &file_time );
-    time =  ((uint64_t)file_time.dwLowDateTime )      ;
-    time += ((uint64_t)file_time.dwHighDateTime) << 32;
-
-    tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
-    tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
-
-    return 0;
+    return std::chrono::high_resolution_clock::now();
+}
+const auto t0 = getNow();
+#define GET_TIME(t1) { \
+    t1 = std::chrono::duration_cast<std::chrono::duration<double>>(getNow() - t0).count(); \
 }
 #else
-#include <sys/time.h>
+#include <time.h>
+#define GET_TIME(now) { \
+    struct timespec t; \
+    clock_gettime(CLOCK_MONOTONIC, &t); \
+    now = t.tv_sec + t.tv_nsec/1000000000.0; \
+}
 #endif
 
-#define GET_TIME(now) { \
-    struct timeval t; \
-    gettimeofday(&t, NULL); \
-    now = t.tv_sec + t.tv_usec/1000000.0; \
+#define CUDA_CHECK(val) { \
+	if (val != cudaSuccess) { \
+		fprintf(stderr, "Error %s at line %d in file %s\n", cudaGetErrorString(val), __LINE__, __FILE__); \
+		exit(1); \
+	} \
 }
 
 #define CUDA_CHECK(val) { \
