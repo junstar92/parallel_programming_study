@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     double start, finish;
     // add matrix at host for result
     GET_TIME(start);
-    sumMatrixOnHost(h_A, h_B, hostRef, nx, ny);
+    //sumMatrixOnHost(h_A, h_B, hostRef, nx, ny);
     GET_TIME(finish);
     //printf("sumMatrixOnHost elapsed %f ms\n", (finish-start)*1000.f);
 
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
     // check device result
-    checkResult(hostRef, gpuRef, nxy);
+    //checkResult(hostRef, gpuRef, nxy);
 
     // free device global memory
     CUDA_CHECK(cudaFree(d_A));

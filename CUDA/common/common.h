@@ -28,14 +28,7 @@ const auto t0 = getNow();
 #define CUDA_CHECK(val) { \
 	if (val != cudaSuccess) { \
 		fprintf(stderr, "Error %s at line %d in file %s\n", cudaGetErrorString(val), __LINE__, __FILE__); \
-		exit(1); \
-	} \
-}
-
-#define CUDA_CHECK(val) { \
-	if (val != cudaSuccess) { \
-		fprintf(stderr, "Error %s at line %d in file %s\n", cudaGetErrorString(val), __LINE__, __FILE__); \
-		exit(1); \
+		exit(val); \
 	} \
 }
 
