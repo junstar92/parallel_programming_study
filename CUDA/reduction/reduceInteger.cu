@@ -1,6 +1,14 @@
 /*****************************************************************************
  * File:        reduceInteger.cu
- * Description: 
+ * Description: Implement kernel functions for reduce problem(sum)
+ *                  - recursiveReduce
+ *                  - reduceNeighbored
+ *                  - reduceNeighboredLess
+ *                  - reduceInterleaved
+ *                  - reduceUnrolling2, reduceUnrolling4, reduceUnrolling8
+ *                  - reduceUnrollWarps8
+ *                  - reduceCompleteUnrollWarps8
+ *                  - reduceCompleteUnroll : template version of reduceCompleteUnrollWarps8
  *              
  * Compile:     nvcc -O3 -arch=sm_75 -o reduceInteger reduceInteger.cu -I..
  * Run:         ./reduceInteger [N]
