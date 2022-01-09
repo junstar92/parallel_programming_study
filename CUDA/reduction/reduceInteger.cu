@@ -455,7 +455,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Neighbored      elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Neighbored      elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x, block.x);
     
     // kernel 2: reduceNeighbored with less divergence
@@ -470,7 +470,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Neighbored2     elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Neighbored2     elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x, block.x);
 
     // kernel 3: reduceInterleaved
@@ -485,7 +485,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Interleaved     elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Interleaved     elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x, block.x);
 
     // kernel 4: reduceUnrolling2
@@ -500,7 +500,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 2; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Unrolling2      elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Unrolling2      elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/2, block.x);
 
     // kernel 5: reduceUnrolling4
@@ -515,7 +515,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 4; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Unrolling4      elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Unrolling4      elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/4, block.x);
 
     // kernel 6: reduceUnrolling8
@@ -530,7 +530,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 8; i++)
         gpu_sum += h_oData[i];
-    printf("gpu Unrolling8      elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu Unrolling8      elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/8, block.x);
         
     // kernel 7: reduceUnrollWarps8
@@ -545,7 +545,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 8; i++)
         gpu_sum += h_oData[i];
-    printf("gpu UnrollWarp8     elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu UnrollWarp8     elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/8, block.x);
 
     // kernel 8: reduceCompleteUnrollWarps8
@@ -560,7 +560,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 8; i++)
         gpu_sum += h_oData[i];
-    printf("gpu CompleteUnroll8 elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu CompleteUnroll8 elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/8, block.x);
 
     // kernel 9: reduceCompleteUnroll
@@ -591,7 +591,7 @@ int main(int argc, char** argv)
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 8; i++)
         gpu_sum += h_oData[i];
-    printf("gpu CompleteUnroll  elapsed %.4f ms gpu_sum: %d <<<grud %d block %d>>>\n",
+    printf("gpu CompleteUnroll  elapsed %.4f ms gpu_sum: %d <<<grid %d block %d>>>\n",
         (finish-start)*1000.f, gpu_sum, grid.x/8, block.x);
 
     // free host memory
