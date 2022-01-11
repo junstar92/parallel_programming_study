@@ -4,7 +4,7 @@
  *                  - cpuRecursiveReduce
  *                  - reduceNeighbored
  *              
- * Compile:     nvcc -O3 -arch=sm_75 -rdc=true -o nestedReduce nestedReduce.cu -I..
+ * Compile:     nvcc -arch=sm_75 -rdc=true -o nestedReduce nestedReduce.cu -I..
  * Run:         ./nestedReduce [N]
  * Argument:    N = block size (1D)
  *****************************************************************************/
@@ -73,7 +73,7 @@ void gpuRecursiveReduce(int *g_iData, int *g_oData, unsigned int iSize)
     int iStride = iSize >> 1;
 
     if (iStride > 1 && tid < iStride) {
-        // in-place reducetion
+        // in-place reduction
         iData[tid] += iData[tid + iStride];
     }
     __syncthreads();
