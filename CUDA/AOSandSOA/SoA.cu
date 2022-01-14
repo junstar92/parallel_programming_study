@@ -19,7 +19,7 @@ struct innerArray {
     float y[LEN];
 };
 
-void initialInnerStruct(innerArray* in, const int N)
+void initialInnerArray(innerArray* in, const int N)
 {
     for (int i = 0; i < N; i++) {
         in->x[i] = (rand() & 0xFF) / 100.f;
@@ -27,7 +27,7 @@ void initialInnerStruct(innerArray* in, const int N)
     }
 }
 
-void testInnerStructHost(innerArray* data, innerArray* result, const int N)
+void testInnerArrayHost(innerArray* data, innerArray* result, const int N)
 {
     for (int i = 0; i < N; i++) {
         result->x[i] = data->x[i] + 10.f;
@@ -35,7 +35,7 @@ void testInnerStructHost(innerArray* data, innerArray* result, const int N)
     }
 }
 
-void checkInnerStruct(innerArray* hostRef, innerArray* gpuRef, const int N)
+void checkInnerArray(innerArray* hostRef, innerArray* gpuRef, const int N)
 {
     double epsilon = 1.0e-8;
     
@@ -56,7 +56,7 @@ void checkInnerStruct(innerArray* hostRef, innerArray* gpuRef, const int N)
 }
 
 __global__
-void testInnerStruct(innerArray* data, innerArray* result, const int N)
+void testInnerArray(innerArray* data, innerArray* result, const int N)
 {
     unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -103,8 +103,8 @@ int main(int argc, char** argv)
     innerArray *gpuRef = (innerArray*)malloc(nBytes);
 
     // initialize host array
-    initialInnerStruct(h_A, nElem);
-    testInnerStructHost(h_A, hostRef, nElem);
+    initialInnerArray(h_A, nElem);
+    testInnerArrayHost(h_A, hostRef, nElem);
 
     // allocate device memory
     innerArray* d_A, *d_C;
@@ -130,16 +130,16 @@ int main(int argc, char** argv)
     GET_TIME(finish);
     //printf("warpup      <<< %3d, %3d >>> elapsed %f sec\n", grids.x, blocks.x, finish-start);
     CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
-    checkInnerStruct(hostRef, gpuRef, nElem);
+    checkInnerArray(hostRef, gpuRef, nElem);
 
-    // kernel 2: testInnerStruct
+    // kernel 2: testInnerArray
     GET_TIME(start);
-    testInnerStruct<<<grids, blocks>>>(d_A, d_C, nElem);
+    testInnerArray<<<grids, blocks>>>(d_A, d_C, nElem);
     CUDA_CHECK(cudaDeviceSynchronize());
     GET_TIME(finish);
     printf("innerarray  <<< %3d, %3d >>> elapsed %f sec\n", grids.x, blocks.x, finish-start);
     CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
-    checkInnerStruct(hostRef, gpuRef, nElem);
+    checkInnerArray(hostRef, gpuRef, nElem);
 
     // free memories bost host and device
     CUDA_CHECK(cudaFree(d_A));
