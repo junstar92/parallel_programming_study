@@ -2,9 +2,6 @@
  * File:        transpose.cu
  * Description: This is an example of matrix transpose kernel using various
  *              memory access pattern
- * 
- *              Kernel List
- *              
  *              
  * Compile:     nvcc -O3 -o transpose transpose.cu -I.. [-Xptxas -dlcm=ca]
  * Run:         ./transpose
