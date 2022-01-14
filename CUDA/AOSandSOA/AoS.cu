@@ -88,6 +88,7 @@ int main(int argc, char** argv)
     cudaDeviceProp deviceProp;
     CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("Test struct of array at device %d: %s\n", dev, deviceProp.name);
+    CUDA_CHECK(cudaSetDevice(dev));
 
     // allocate host memory
     int nElem = LEN;
