@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
     // add matrix at host side for result check
     GET_TIME(start);
-    sumMatrixOnHost(A, B, hostRef, nx, ny);
+    sumMatrixOnHost(h_A, h_B, hostRef, nx, ny);
     GET_TIME(finish);
     printf("sumMatrix on host:\t %f sec\n", finish - start);
 
