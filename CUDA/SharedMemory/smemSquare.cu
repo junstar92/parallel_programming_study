@@ -54,6 +54,86 @@ void setColReadCol(int* out)
     out[idx] = tile[threadIdx.x][threadIdx.y];
 }
 
+__global__
+void setRowReadCol(int *out)
+{
+    // static shared memory
+    __shared__ int tile[BDIMY][BDIMX];
+
+    // mapping from thread index to global memory index
+    unsigned int idx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    // shared memory store operation
+    tile[threadIdx.y][threadIdx.x] = idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[idx] = tile[threadIdx.x][threadIdx.y];
+}
+
+__global__
+void setRowReadColDyn(int *out)
+{
+    // dynamic shared memory
+    extern  __shared__ int tile[];
+
+    // mapping from thread index to global memory index
+    unsigned int row_idx = threadIdx.y * blockDim.x + threadIdx.x;
+    unsigned int col_idx = threadIdx.x * blockDim.y + threadIdx.y;
+
+    // shared memory store operation
+    tile[row_idx] = row_idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[row_idx] = tile[col_idx];
+}
+
+__global__
+void setRowReadColPad(int *out)
+{
+    // static shared memory
+    __shared__ int tile[BDIMY][BDIMX + IPAD];
+
+    // mapping from thread index to global memory offset
+    unsigned int idx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    // shared memory store operation
+    tile[threadIdx.y][threadIdx.x] = idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[idx] = tile[threadIdx.x][threadIdx.y];
+}
+
+__global__
+void setRowReadColDynPad(int *out)
+{
+    // dynamic shared memory
+    extern  __shared__ int tile[];
+
+    // mapping from thread index to global memory index
+    unsigned int row_idx = threadIdx.y * (blockDim.x + IPAD) + threadIdx.x;
+    unsigned int col_idx = threadIdx.x * (blockDim.x + IPAD) + threadIdx.y;
+
+    unsigned int g_idx = threadIdx.y * blockDim.x + threadIdx.x;
+
+    // shared memory store operation
+    tile[row_idx] = g_idx;
+
+    // wait for all threads to complete
+    __syncthreads();
+
+    // shared memory load operation
+    out[g_idx] = tile[col_idx];
+}
+
 int main(int argc, char** argv)
 {
     // setup device
@@ -89,6 +169,22 @@ int main(int argc, char** argv)
 
     CUDA_CHECK(cudaMemset(d_C, 0, nBytes));
     setRowReadRow<<<grid, block>>>(d_C);
+    CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaMemset(d_C, 0, nBytes));
+    setRowReadCol<<<grid, block>>>(d_C);
+    CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaMemset(d_C, 0, nBytes));
+    setRowReadColDyn<<<grid, block, BDIMX*BDIMY*sizeof(int)>>>(d_C);
+    CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaMemset(d_C, 0, nBytes));
+    setRowReadColPad<<<grid, block>>>(d_C);
+    CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK(cudaMemset(d_C, 0, nBytes));
+    setRowReadColDynPad<<<grid, block, (BDIMX + IPAD)*BDIMY*sizeof(int)>>>(d_C);
     CUDA_CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
     // free host and device memory
