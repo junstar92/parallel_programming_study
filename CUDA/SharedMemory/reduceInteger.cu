@@ -365,7 +365,7 @@ int main(int argc, char** argv)
     // setup device
     int dev = 0;
     cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, dev);
+    CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("Starting reduction at device %d: %s\n", dev, deviceProp.name);
 
     // initialization
@@ -392,17 +392,17 @@ int main(int argc, char** argv)
 
     // allocate device memory
     int *d_iData, *d_oData;
-    cudaMalloc((void**)&d_iData, bytes);
-    cudaMalloc((void**)&d_oData, grid.x * sizeof(int));
+    CUDA_CHECK(cudaMalloc((void**)&d_iData, bytes));
+    CUDA_CHECK(cudaMalloc((void**)&d_oData, grid.x * sizeof(int)));
 
     // cpu reduction
     int cpu_sum = recursiveReduce(tmp, size);
     printf("cpu reduce          : %d\n", cpu_sum);
 
     // reduce gmem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceGmem<<<grid, block>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
@@ -410,9 +410,9 @@ int main(int argc, char** argv)
     printf("reduceGmem          : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x, block.x);
 
     // reduce smem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceSmem<<<grid, block>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
@@ -420,9 +420,9 @@ int main(int argc, char** argv)
     printf("reduceSmem          : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x, block.x);
 
     // reduce smem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceSmemDyn<<<grid, block, DIM*sizeof(int)>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x; i++)
@@ -430,9 +430,9 @@ int main(int argc, char** argv)
     printf("reduceSmemDyn       : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x, block.x);
 
     // reduce gmem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceGmemUnroll<<<grid.x / 4, block>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 4; i++)
@@ -440,9 +440,9 @@ int main(int argc, char** argv)
     printf("reduceGmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x / 4, block.x);
 
     // reduce smem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceSmemUnroll<<<grid.x / 4, block>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 4; i++)
@@ -450,9 +450,9 @@ int main(int argc, char** argv)
     printf("reduceSmemUnroll4   : %d <<<grid %d block %d>>>\n", gpu_sum, grid.x / 4, block.x);
 
     // reduce smem
-    cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_iData, h_iData, bytes, cudaMemcpyHostToDevice));
     reduceSmemUnrollDyn<<<grid.x / 4, block, DIM*sizeof(int)>>>(d_iData, d_oData, size);
-    cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost);
+    CUDA_CHECK(cudaMemcpy(h_oData, d_oData, grid.x / 4 * sizeof(int), cudaMemcpyDeviceToHost));
 
     gpu_sum = 0;
     for (int i = 0; i < grid.x / 4; i++)
@@ -464,11 +464,11 @@ int main(int argc, char** argv)
     free(h_oData);
 
     // free device memory
-    cudaFree(d_iData);
-    cudaFree(d_oData);
+    CUDA_CHECK(cudaFree(d_iData));
+    CUDA_CHECK(cudaFree(d_oData));
 
     // reset device
-    cudaDeviceReset();
+    CUDA_CHECK(cudaDeviceReset());
 
     return 0;
 }
