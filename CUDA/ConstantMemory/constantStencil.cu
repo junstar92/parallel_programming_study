@@ -137,7 +137,7 @@ int main(int argc, char** argv)
     int dev = 0;
     cudaDeviceProp deviceProp;
     CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, dev));
-    printf("Starting transpose at device %d: %s\n", dev, deviceProp.name);
+    printf("Starting stencil computation at device %d: %s\n", dev, deviceProp.name);
     CUDA_CHECK(cudaSetDevice(dev));
 
     // setup data size
