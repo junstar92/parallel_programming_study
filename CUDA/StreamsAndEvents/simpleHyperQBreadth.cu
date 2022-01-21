@@ -130,13 +130,15 @@ int main(int argc, char** argv)
     // record start event
     CUDA_CHECK(cudaEventRecord(start, 0));
 
-    // dispatch job with depth first ordering
-    for (int i = 0; i < n_streams; i++) {
+    // dispatch job with breadth first ordering
+    for (int i = 0; i < n_streams; i++) 
         kernel_1<<<grid, block, 0, streams[i]>>>();
+    for (int i = 0; i < n_streams; i++) 
         kernel_2<<<grid, block, 0, streams[i]>>>();
+    for (int i = 0; i < n_streams; i++) 
         kernel_3<<<grid, block, 0, streams[i]>>>();
+    for (int i = 0; i < n_streams; i++) 
         kernel_4<<<grid, block, 0, streams[i]>>>();
-    }
     
     // record stop event
     CUDA_CHECK(cudaEventRecord(stop, 0));
