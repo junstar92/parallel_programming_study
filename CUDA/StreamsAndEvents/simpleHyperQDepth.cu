@@ -17,7 +17,7 @@
 #include <cuda_runtime.h>
 #include "common/common.h"
 
-#define N 10000
+#define N 1000
 #define NSTREAM 4
 
 __global__
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     for (int i = 0;i < n_streams; i++) {
         kernel_1<<<grid, block, 0, streams[i]>>>();
         kernel_2<<<grid, block, 0, streams[i]>>>();
-        kernel_3<<<grid, block, 0, streams[i]>>>();
+        kernel_3<<<grid, block>>>();
         kernel_4<<<grid, block, 0, streams[i]>>>();
     }
     

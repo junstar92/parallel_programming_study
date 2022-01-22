@@ -15,7 +15,7 @@
 #include <cuda_runtime.h>
 #include "common/common.h"
 
-#define N 10000
+#define N 1000
 #define NSTREAM 4
 
 __global__
