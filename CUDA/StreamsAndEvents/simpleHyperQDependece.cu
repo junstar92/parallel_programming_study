@@ -1,16 +1,14 @@
 /*****************************************************************************
- * File:        simpleHyperQDepth.cu
- * Description: This is an example to demonstrates submitting work to a CUDA
- *              Stream in depth-first order. Work submission in depth-first order
- *              may introduce false-dependencies between unrelated tasks in
- *              different CUDA streams, limiting the parallelism of a CUDA application.
- *              kernel_1, kernel_2, kernel_3, and kernel_4 simply implement
- *              identical, dummy computation. Separate kernels are used to make
- *              the scheduling of these kernels simpler to visualize in the Visual
- *              Profiler.
+ * File:        simpleHyperQDependece.cu
+ * Description: This is an example of adding inter-stream dependencies using
+ *              cudaStreamWaitEvent. This code launches 4 kernels in each of
+ *              n_streams streams. An event is recoded at the completion of
+ *              each stream (kernelEvent). cudaStreamEvent is then called on
+ *              that event and the last stream to force all computation in the
+ *              final stream to only execute when all other streams have completed.
  *              
- * Compile:     nvcc -o simpleHyperQDepth simpleHyperQDepth.cu -I..
- * Run:         ./simpleHyperQDepth
+ * Compile:     nvcc -o simpleHyperQDependece simpleHyperQDependece.cu -I..
+ * Run:         ./simpleHyperQDependece
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +127,12 @@ int main(int argc, char** argv)
     CUDA_CHECK(cudaEventCreate(&start));
     CUDA_CHECK(cudaEventCreate(&stop));
 
+    cudaEvent_t *kernelEvent;
+    kernelEvent = (cudaEvent_t*)malloc(n_streams * sizeof(cudaEvent_t));
+    for (int i = 0; i < n_streams; i++) {
+        CUDA_CHECK(cudaEventCreateWithFlags(&(kernelEvent[i]), cudaEventDisableTiming));
+    }
+
     // record start event
     CUDA_CHECK(cudaEventRecord(start, 0));
 
@@ -138,6 +142,9 @@ int main(int argc, char** argv)
         kernel_2<<<grid, block, 0, streams[i]>>>();
         kernel_3<<<grid, block, 0, streams[i]>>>();
         kernel_4<<<grid, block, 0, streams[i]>>>();
+
+        CUDA_CHECK(cudaEventRecord(kernelEvent[i], streams[i]));
+        CUDA_CHECK(cudaStreamWaitEvent(streams[n_streams-1], kernelEvent[i], 0));
     }
     
     // record stop event
@@ -151,8 +158,10 @@ int main(int argc, char** argv)
     // release all streams
     for (int i = 0; i < n_streams; i++) {
         CUDA_CHECK(cudaStreamDestroy(streams[i]));
+        CUDA_CHECK(cudaEventDestroy(kernelEvent[i]));
     }
     free(streams);
+    free(kernelEvent);
     
     // destory events
     CUDA_CHECK(cudaEventDestroy(start));
