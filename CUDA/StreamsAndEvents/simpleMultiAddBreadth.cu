@@ -1,5 +1,5 @@
 /*****************************************************************************
- * File:        simpleMultiAddDepth.cu
+ * File:        simpleMultiAddBreadth.cu
  * Description: This is an example to demonstrate overlapping computation and 
  *              communication by partitioning a data set asynchronously launching
  *              the memory copies and kernels for each subset. Launching all
@@ -8,10 +8,10 @@
  *              necessary data has been transferred. However, because the work of
  *              each subset is independent of all other subsets, the communication
  *              and computation of different subsets will overlap.
- *              (This example launches copies and kernels in depth-first order)
+ *              (This example launches copies and kernels in breadth-first order)
  *              
- * Compile:     nvcc -o simpleMultiAddDepth simpleMultiAddDepth.cu -I..
- * Run:         ./simpleMultiAddDepth
+ * Compile:     nvcc -o simpleMultiAddBreadth simpleMultiAddBreadth.cu -I..
+ * Run:         ./simpleMultiAddBreadth
  *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,14 +171,24 @@ int main(int argc, char** argv)
 
     CUDA_CHECK(cudaEventRecord(start, 0));
 
-    // initiate all work on the device asynchronously in depth-first order
+    // initiate all asynchronous transfers to the device
     for (int i = 0; i < NSTREAM; i++) {
         int offset = i * iElem;
         CUDA_CHECK(cudaMemcpyAsync(&d_A[offset], &h_A[offset],
             iBytes, cudaMemcpyHostToDevice, stream[i]));
         CUDA_CHECK(cudaMemcpyAsync(&d_B[offset], &h_B[offset],
             iBytes, cudaMemcpyHostToDevice, stream[i]));
+    }
+
+    // launch a kernel in each stream
+    for (int i = 0; i < NSTREAM; i++) {
+        int offset = i * iElem;
         sumArrays<<<grid, block, 0, stream[i]>>>(&d_A[offset], &d_B[offset], &d_C[offset], iElem);
+    }
+
+    // enqueue asynchronous transfers from the device
+    for (int i = 0; i < NSTREAM; i++) {
+        int offset = i * iElem;
         CUDA_CHECK(cudaMemcpyAsync(&gpuRef[offset], &d_C[offset],
             iBytes, cudaMemcpyDeviceToHost, stream[i]));
     }
