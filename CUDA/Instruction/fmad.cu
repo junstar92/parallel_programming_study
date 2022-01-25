@@ -3,7 +3,7 @@
  * Description: This is an example to illustrates the effect on numerical accuracy
  *              of fusing a multiply-add into a sing MAD instruction.
  *              
- * Compile:     nvcc -o fmad fmad.cu -I..
+ * Compile:     nvcc -o fmad fmad.cu -I.. [--fmad=true or false]
  * Run:         ./fmad
  *****************************************************************************/
 #include <stdio.h>
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
     double host_value = host_fmad_kernel(x, y);
 
-    CUDA_CHECK(cudaMalloc(void**)&d_out, sizeof(double));
+    CUDA_CHECK(cudaMalloc((void**)&d_out, sizeof(double)));
     fmad_kernel<<<1, 32>>>(x, y, d_out);
     CUDA_CHECK(cudaMemcpy(&h_out, d_out, sizeof(double), cudaMemcpyDeviceToHost));
 
