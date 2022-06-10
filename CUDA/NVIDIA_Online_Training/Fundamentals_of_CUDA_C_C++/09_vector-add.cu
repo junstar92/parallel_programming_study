@@ -55,8 +55,8 @@ int main()
     initWith(4, b, N);
     initWith(0, c, N);
 
-    size_t threadsPerBlock = 256;
-    size_t numberOfBlocks = (N + threadsPerBlock - 1) / threadsPerBlock;
+    size_t threadsPerBlock = 1024;
+    size_t numberOfBlocks = 1;
 
     addVectorsInto<<<numberOfBlocks, threadsPerBlock>>>(c, a, b, N);
 
