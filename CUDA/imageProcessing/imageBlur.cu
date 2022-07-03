@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     // Launch the blur Kernel
     const int block_size = 16;
     dim3 threads(block_size, block_size, channels);
-    dim3 grid(ceil(height / (double)threads.x), ceil(width / (double)threads.y));
+    dim3 grid(ceil(width / (double)threads.x), ceil(height / (double)threads.y));
     blurKernel<<<grid, threads>>>(d_origImg, d_resultImg, width, height, channels);
     
     // Copy the device result in device memory to the host result in host memory
